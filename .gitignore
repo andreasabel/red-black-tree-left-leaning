@@ -1,2 +1,5 @@
 Agda
 lib
+*~
+.*.el
+*.agdai
