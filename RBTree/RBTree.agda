@@ -1,6 +1,5 @@
-module RBTree where
+open import Relation.Binary
 
-open import Data.Unit
 open import Data.Empty
 open import Data.Product
 
@@ -8,27 +7,27 @@ open import Data.Nat
 
 open import Relation.Binary.PropositionalEquality
 
-data Color : Set where
-  red : Color
-  black : Color
+module RBTree where
 
-mutual
-  data RBTree (α : Set) : Set where
-    rbroot : (n : RBTree α) → color n ≡ black → RBTree α
-    rbleaf : RBTree α
-    rbnode : (c : Color) → (l : RBTree α) → (r : RBTree α)
-             → (c ≡ red → (color l ≡ black) × (color r ≡ black))
-             → RBTree α
+module GenericRBTree (α : Set) (_≤_ : Rel α) where
 
-  color : ∀ {α} → RBTree α → Color
-  color (rbroot _ _) = black
-  color rbleaf = black
-  color (rbnode c _ _ _) = c
+  data Color : Set where
+    red : Color
+    black : Color
 
-∥_∥ : ∀ {α} → RBTree α → ℕ
-∥ rbroot n _ ∥ = ∥ n ∥
-∥ rbleaf ∥ = 1
-∥ rbnode _ l r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
+  data RBTree : Color → Set where
+    rbleaf  : RBTree black
+    rbred   : (v : α) (l : RBTree black) (r : RBTree black)
+              → RBTree red
+    rbblack : ∀ {c₁ c₂} → (v : α) (l : RBTree c₁) (r : RBTree c₂)
+              → RBTree black
 
-testtree : RBTree ℕ
-testtree = rbroot (rbnode black rbleaf rbleaf (λ t → refl , refl)) refl
+  ∥_∥ : ∀ {c} → RBTree c → ℕ
+  ∥ rbleaf ∥ = 0
+  ∥ rbred _ l r ∥ = 1 + ∥ l ∥ + ∥ r ∥
+  ∥ rbblack _ l r ∥ = 1 + ∥ l ∥ + ∥ r ∥
+  
+open module RBTreeNat = GenericRBTree ℕ (DecTotalOrder._≤_ decTotalOrder)
+
+testtree : RBTree red
+testtree = rbred 1 rbleaf rbleaf
