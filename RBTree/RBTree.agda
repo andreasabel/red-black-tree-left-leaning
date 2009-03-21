@@ -1,9 +1,10 @@
-open import Data.Unit
 open import Data.Empty
 open import Data.Product
 open import Data.Maybe
+open import Data.Function
 
-open import Data.Nat
+open import Data.Unit hiding (_≤_; _≟_)
+open import Data.Nat hiding (_≤_; _≟_)
 
 open import Category.Monad
 
@@ -11,7 +12,16 @@ open import Relation.Binary
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
-module RBTree (α β : Set) (_≤_ _>_ : Rel α) where
+module RBTree (β : Set) (order : DecTotalOrder) where
+
+α : Set
+α = DecTotalOrder.carrier order
+
+_≤_ : Rel α
+_≤_ = DecTotalOrder._≤_ order
+
+_≟_ : Rel α
+_≟_ = DecTotalOrder._≟_ order
 
 data Color : Set where
   red : Color
@@ -38,7 +48,7 @@ mutual
   _≤*_ = R* _≤_
 
   _>*_ : ∀ {b c} → α → RBTree b c → Set
-  _>*_ = R* _>_
+  _>*_ = R* (λ a b → ¬ b ≤ a)
 
 empty : RBTree 1 black
 empty = rbl
