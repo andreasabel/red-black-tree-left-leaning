@@ -37,6 +37,9 @@ module RBTree (α β : Set) (_≤_ _>_ : Rel α) where
     _>*_ : ∀ {b c} → α → RBTree b c → Set
     _>*_ = R* _>_
 
+  empty : RBTree 1 black
+  empty = rbl
+
   ∥_∥ : ∀ {b c} → RBTree b c → ℕ
   ∥ rbl ∥ = 0
   ∥ rbr _ _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
