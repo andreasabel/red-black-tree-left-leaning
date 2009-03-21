@@ -1,11 +1,14 @@
-open import Relation.Binary
-
 open import Data.Unit
 open import Data.Empty
 open import Data.Product
+open import Data.Maybe
 
 open import Data.Nat
 
+open import Category.Monad
+
+open import Relation.Binary
+open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
 module RBTree (α β : Set) (_≤_ _>_ : Rel α) where
@@ -45,3 +48,8 @@ empty = rbl
 ∥ rbr _ _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 ∥ rbb _ _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
+-- lookup : ∀ {b c} → RBTree b c → α → Maybe β
+-- lookup rlb k = nothing
+-- lookup (rbr k v l _ r _) k' with k ≟ k'
+-- ... | yes _ = just v
+-- ... | no _  = lookup l k' ∣ lookup r k'
