@@ -28,16 +28,16 @@ module GenericRBTree (α : Set) (_≤_ _>_ : Rel α) where
             → (r : RBTree b c₂) → v ≤* r
             → RBTree (b + 1) black
 
+    R* : Rel α → ∀ {b c} → α → RBTree b c → Set
+    R* R _ rbl = ⊤
+    R* R a (rbr v l _ r _) = (R a v) × (R* R a l) × (R* R a r)
+    R* R a (rbb v l _ r _) = (R a v) × (R* R a l) × (R* R a r)
+
     _≤*_ : ∀ {b c} → α → RBTree b c → Set
-    _ ≤* rbl = ⊤
-    a ≤* (rbr v l _ r _) = a ≤ v × a ≤* l × a ≤* r
-    a ≤* (rbb v l _ r _) = a ≤ v × a ≤* l × a ≤* r
+    _≤*_ = R* _≤_
 
     _>*_ : ∀ {b c} → α → RBTree b c → Set
-    _ >* rbl = ⊤
-    a >* (rbr v l _ r _) = a > v × a >* l × a >* r
-    a >* (rbb v l _ r _) = a > v × a >* l × a >* r
-
+    _>*_ = R* _>_
 
   ∥_∥ : ∀ {b c} → RBTree b c → ℕ
   ∥ rbl ∥ = 0
