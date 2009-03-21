@@ -14,8 +14,8 @@ open import Relation.Binary.PropositionalEquality
 
 module RBTree (β : Set) (order : DecTotalOrder) where
 
-module dto = DecTotalOrder order
-open dto
+open module dto = DecTotalOrder order
+open module maybemonad = RawMonadPlus monadPlus
 
 α : Set
 α = DecTotalOrder.carrier order
@@ -55,8 +55,12 @@ empty = rbl
 ∥ rbr _ _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 ∥ rbb _ _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
--- lookup : ∀ {b c} → RBTree b c → α → Maybe β
--- lookup rlb k = nothing
--- lookup (rbr k v l _ r _) k' with k ≟ k'
--- ... | yes _ = just v
--- ... | no _  = lookup l k' ∣ lookup r k'
+lookup : ∀ {b c} → RBTree b c → α → Maybe β
+lookup rbl k = nothing
+lookup (rbr k v l _ r _) k' with k ≟ k'
+... | yes _ = just v
+... | no _  = lookup l k' ∣ lookup r k'
+lookup (rbb k v l _ r _) k' with k ≟ k'
+... | yes _ = just v
+... | no _  = lookup l k' ∣ lookup r k'
+
