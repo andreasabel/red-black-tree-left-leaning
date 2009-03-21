@@ -27,12 +27,12 @@ module GenericRBTree (α : Set) (_≤_ _>_ : Rel α) where
                 → RBTree (b + 1) black
 
     _≤*_ : ∀ {b c} → α → RBTree b c → Set
-    a ≤* rbleaf = ⊤
+    _ ≤* rbleaf = ⊤
     a ≤* (rbred v l r _ _) = a ≤ v × a ≤* l × a ≤* r
     a ≤* (rbblack v l r _ _) = a ≤ v × a ≤* l × a ≤* r
 
     _>*_ : ∀ {b c} → α → RBTree b c → Set
-    a >* rbleaf = ⊤
+    _ >* rbleaf = ⊤
     a >* (rbred v l r _ _) = a > v × a >* l × a >* r
     a >* (rbblack v l r _ _) = a > v × a >* l × a >* r
 
