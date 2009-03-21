@@ -1,3 +1,5 @@
+module RBTree (α : Set) (_≤_ _>_ : Rel α) where
+
 open import Relation.Binary
 
 open import Data.Unit
@@ -9,8 +11,6 @@ open import Data.Nat
 open import Relation.Binary.PropositionalEquality
 
 module RBTree where
-
-module GenericRBTree (α : Set) (_≤_ _>_ : Rel α) where
 
   data Color : Set where
     red : Color
@@ -44,9 +44,3 @@ module GenericRBTree (α : Set) (_≤_ _>_ : Rel α) where
   ∥ rbr _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
   ∥ rbb _ l _ r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
   
-open module RBTreeNat = GenericRBTree ℕ Data.Nat._≤_ Data.Nat._>_
-
--- testtree : RBTree 2 red
--- testtree = rbr 2
---                  (rbb 1 rbl rbl tt tt)
---                  (rbb 3 rbl rbl tt tt) ({!s≤s z≤n!} , {!!}) {!!}
