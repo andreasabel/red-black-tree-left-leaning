@@ -14,14 +14,11 @@ open import Relation.Binary.PropositionalEquality
 
 module RBTree (β : Set) (order : DecTotalOrder) where
 
+module dto = DecTotalOrder order
+open dto
+
 α : Set
 α = DecTotalOrder.carrier order
-
-_≤_ : Rel α
-_≤_ = DecTotalOrder._≤_ order
-
-_≟_ : Rel α
-_≟_ = DecTotalOrder._≟_ order
 
 data Color : Set where
   red : Color
