@@ -45,7 +45,7 @@ mutual
   _≤*_ = R* _≤_
 
   _>*_ : ∀ {b c} → α → RBTree b c → Set
-  _>*_ = R* (λ a b → ¬ b ≤ a)
+  _>*_ = R* (λ a b → ¬ a ≤ b)
 
 empty : RBTree 1 black
 empty = rbl
