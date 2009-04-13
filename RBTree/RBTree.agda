@@ -26,38 +26,38 @@ data Color : Set where
   black : Color
 
 mutual
-  data RBTree : ℕ → Set where
-    rbl : RBTree 0
+  data RBTree : Color → ℕ → Set where
+    rbl : RBTree black 0
     rbr : {b : ℕ} (k : α) (v : β)
-          → (l : RBTree b)
-          → (r : RBTree b)
+          → (l : RBTree black b)
+          → (r : RBTree black b)
           → l *< k × k <* r
-          → RBTree b
-    rbb : {b : ℕ} (k : α) (v : β)
-          → (l : RBTree b)
-          → (r : RBTree b)
+          → RBTree red b
+    rbb : {c₁ c₂ : Color} {b : ℕ} (k : α) (v : β)
+          → (l : RBTree c₁ b)
+          → (r : RBTree c₂ b)
           → l *< k × k <* r
-          → RBTree (suc b)
+          → RBTree black (suc b)
 
-  _<*_ : ∀ {b} → α → RBTree b → Set
+  _<*_ : ∀ {c b} → α → RBTree c b → Set
   a <* rbl = ⊤
   a <* (rbr k _ l r _) = (a < k) × (a <* l) × (a <* r)
   a <* (rbb k _ l r _) = (a < k) × (a <* l) × (a <* r)
 
-  _*<_ : ∀ {b} → RBTree b → α → Set
+  _*<_ : ∀ {c b} → RBTree c b → α → Set
   rbl *< _ = ⊤
   (rbr k _ l r _) *< a = (k < a) × (l *< a) × (r *< a)
   (rbb k _ l r _) *< a = (k < a) × (l *< a) × (r *< a)
 
-empty : RBTree 0
+empty : RBTree black 0
 empty = rbl
 
-∥_∥ : ∀ {b} → RBTree b → ℕ
+∥_∥ : ∀ {c b} → RBTree c b → ℕ
 ∥ rbl ∥ = 0
 ∥ rbr _ _ l r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 ∥ rbb _ _ l r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
-lookup : ∀ {b} → RBTree b → α → Maybe β
+lookup : ∀ {c b} → RBTree c b → α → Maybe β
 lookup rbl k = nothing
 lookup (rbr k v l r _) k' with k ≟ k'
 ... | yes _ = just v
@@ -68,13 +68,13 @@ lookup (rbb k v l r _) k' with k ≟ k'
 
 private
 
-  makeBlack : ∀ {b} → RBTree b → ∃ (λ n → RBTree (n + b))
+  makeBlack : ∀ {c b} → RBTree c b → ∃ (λ n → RBTree black n)
   makeBlack rbl = , rbl
-  makeBlack (rbb k v l r si) = 0 , rbb k v l r si
-  makeBlack (rbr k v l r si) = 1 , rbb k v l r si
+  makeBlack (rbb k v l r si) = , rbb k v l r si
+  makeBlack (rbr k v l r si) = , rbb k v l r si
 
-  ins : ∀ {b} → α → β → RBTree b → ∃ (λ n → RBTree (n + b))
-  ins k v rbl = , rbr k v rbl rbl (tt , tt)
+  ins : ∀ {c b} → α → β → RBTree c b → ∃₂ (λ c' n → RBTree c' n)
+  ins k v rbl = , , rbr k v rbl rbl (tt , tt)
   ins x v (rbr y v' l r si) with compare x y
   ... | tri< _ _ _ = {!!}
   ... | tri≈ _ _ _ = {!!}
@@ -84,5 +84,5 @@ private
   ... | tri≈ _ _ _ = {!!}
   ... | tri> _ _ _ = {!!}
 
-insert : ∀ {b} → α → β → RBTree b → ∃ (λ n → RBTree (n + b))
-insert k v t = {!!}
+insert : ∀ {b} → α → β → RBTree black b → ∃ (λ n → RBTree black n)
+insert k v t = makeBlack (proj₂ (proj₂ (ins k v t)))
