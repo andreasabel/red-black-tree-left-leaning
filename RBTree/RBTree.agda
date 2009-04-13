@@ -13,7 +13,7 @@ open import Relation.Binary
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
-module RBTree (β : Set) (order : StrictTotalOrder) where
+module RBTree (order : StrictTotalOrder) where
 
 open module sto = StrictTotalOrder order
 open module maybemonad = RawMonadPlus monadPlus
@@ -28,61 +28,54 @@ data Color : Set where
 mutual
   data RBTree : Color → ℕ → Set where
     rbl : RBTree black 0
-    rbr : {b : ℕ} (k : α) (v : β)
+    rbr : {b : ℕ}
           → (l : RBTree black b)
+          → (k : α)
           → (r : RBTree black b)
           → l *< k × k <* r
           → RBTree red b
-    rbb : {c₁ c₂ : Color} {b : ℕ} (k : α) (v : β)
+    rbb : {c₁ c₂ : Color} {b : ℕ}
           → (l : RBTree c₁ b)
+          → (k : α)
           → (r : RBTree c₂ b)
           → l *< k × k <* r
           → RBTree black (suc b)
 
   _<*_ : ∀ {c b} → α → RBTree c b → Set
   a <* rbl = ⊤
-  a <* (rbr k _ l r _) = (a < k) × (a <* l) × (a <* r)
-  a <* (rbb k _ l r _) = (a < k) × (a <* l) × (a <* r)
+  a <* (rbr l k r _) = (a < k) × (a <* l) × (a <* r)
+  a <* (rbb l k r _) = (a < k) × (a <* l) × (a <* r)
 
   _*<_ : ∀ {c b} → RBTree c b → α → Set
   rbl *< _ = ⊤
-  (rbr k _ l r _) *< a = (k < a) × (l *< a) × (r *< a)
-  (rbb k _ l r _) *< a = (k < a) × (l *< a) × (r *< a)
+  (rbr l k r _) *< a = (k < a) × (l *< a) × (r *< a)
+  (rbb l k r _) *< a = (k < a) × (l *< a) × (r *< a)
 
 empty : RBTree black 0
 empty = rbl
 
 ∥_∥ : ∀ {c b} → RBTree c b → ℕ
 ∥ rbl ∥ = 0
-∥ rbr _ _ l r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
-∥ rbb _ _ l r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
-
-lookup : ∀ {c b} → RBTree c b → α → Maybe β
-lookup rbl k = nothing
-lookup (rbr k v l r _) k' with k ≟ k'
-... | yes _ = just v
-... | no _  = lookup l k' ∣ lookup r k'
-lookup (rbb k v l r _) k' with k ≟ k'
-... | yes _ = just v
-... | no _  = lookup l k' ∣ lookup r k'
+∥ rbr l k r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
+∥ rbb l k r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
 private
 
-  makeBlack : ∀ {c b} → RBTree c b → ∃ (λ n → RBTree black n)
-  makeBlack rbl = , rbl
-  makeBlack (rbb k v l r si) = , rbb k v l r si
-  makeBlack (rbr k v l r si) = , rbb k v l r si
+  makeBlack : ∀ {c b} → RBTree c b → RBTree black b ⊎ RBTree black (suc b)
+  makeBlack rbl = inj₁ rbl
+  makeBlack (rbb l k r si) = inj₁ (rbb l k r si)
+  makeBlack (rbr l k r si) = inj₂ (rbb l k r si)
 
-  ins : ∀ {c b} → α → β → RBTree c b → ∃₂ (λ c' n → RBTree c' n)
-  ins k v rbl = , , rbr k v rbl rbl (tt , tt)
-  ins x v (rbr y v' l r si) with compare x y
+  ins : ∀ {c b} → α → RBTree c b → ∃ (λ c' → RBTree c' b)
+  ins k rbl = , rbr rbl k rbl (tt , tt)
+  ins x (rbr l y r si) with compare x y
   ... | tri< _ _ _ = {!!}
-  ... | tri≈ _ _ _ = {!!}
+  ... | tri≈ _ _ _ = , rbr l y r si
   ... | tri> _ _ _ = {!!}
-  ins x v (rbb y v' l r si) with compare x y
+  ins x (rbb l y r si) with compare x y
   ... | tri< _ _ _ = {!!}
-  ... | tri≈ _ _ _ = {!!}
+  ... | tri≈ _ _ _ = , rbb l y r si
   ... | tri> _ _ _ = {!!}
 
-insert : ∀ {b} → α → β → RBTree black b → ∃ (λ n → RBTree black n)
-insert k v t = makeBlack (proj₂ (proj₂ (ins k v t)))
+insert : ∀ {b} → α → RBTree black b → RBTree black b ⊎ RBTree black (suc b)
+insert k t = makeBlack (proj₂ (ins k t))
