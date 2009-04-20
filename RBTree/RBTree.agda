@@ -26,47 +26,46 @@ data Color : Set where
   black : Color
 
 mutual
-  data RBTree : Color → ℕ → Set where
-    rbl : RBTree black 0
-    rbr : {b : ℕ}
-          → (l : RBTree black b)
+  data RBTree : Color → Set where
+    rbl : RBTree black
+    rbr : (l : RBTree black)
           → (k : α)
-          → (r : RBTree black b)
+          → (r : RBTree black)
           → l *< k × k <* r
-          → RBTree red b
-    rbb : {c₁ c₂ : Color} {b : ℕ}
-          → (l : RBTree c₁ b)
+          → RBTree red
+    rbb : {c₁ c₂ : Color}
+          → (l : RBTree c₁)
           → (k : α)
-          → (r : RBTree c₂ b)
+          → (r : RBTree c₂)
           → l *< k × k <* r
-          → RBTree black (suc b)
+          → RBTree black
 
-  _<*_ : ∀ {c b} → α → RBTree c b → Set
+  _<*_ : ∀ {c} → α → RBTree c → Set
   a <* rbl = ⊤
   a <* (rbr l k r _) = (a < k) × (a <* l) × (a <* r)
   a <* (rbb l k r _) = (a < k) × (a <* l) × (a <* r)
 
-  _*<_ : ∀ {c b} → RBTree c b → α → Set
+  _*<_ : ∀ {c} → RBTree c → α → Set
   rbl *< _ = ⊤
   (rbr l k r _) *< a = (k < a) × (l *< a) × (r *< a)
   (rbb l k r _) *< a = (k < a) × (l *< a) × (r *< a)
 
-empty : RBTree black 0
+empty : RBTree black
 empty = rbl
 
-∥_∥ : ∀ {c b} → RBTree c b → ℕ
+∥_∥ : ∀ {c} → RBTree c → ℕ
 ∥ rbl ∥ = 0
 ∥ rbr l k r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 ∥ rbb l k r _ ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
 private
 
-  makeBlack : ∀ {c b} → RBTree c b → RBTree black b ⊎ RBTree black (suc b)
-  makeBlack rbl = inj₁ rbl
-  makeBlack (rbb l k r si) = inj₁ (rbb l k r si)
-  makeBlack (rbr l k r si) = inj₂ (rbb l k r si)
+  makeBlack : ∀ {c} → RBTree c → RBTree black
+  makeBlack rbl = rbl
+  makeBlack (rbb l k r si) = rbb l k r si
+  makeBlack (rbr l k r si) = rbb l k r si
 
-  ins : ∀ {c b} → α → RBTree c b → ∃ (λ c' → RBTree c' b)
+  ins : ∀ {c} → α → RBTree c → ∃ (λ c' → RBTree c')
   ins k rbl = , rbr rbl k rbl (tt , tt)
   ins x (rbr l y r si) with compare x y
   ... | tri< _ _ _ = {!!}
@@ -77,5 +76,5 @@ private
   ... | tri≈ _ _ _ = , rbb l y r si
   ... | tri> _ _ _ = {!!}
 
-insert : ∀ {b} → α → RBTree black b → RBTree black b ⊎ RBTree black (suc b)
+insert : α → RBTree black → RBTree black
 insert k t = makeBlack (proj₂ (ins k t))
