@@ -3,7 +3,9 @@ open import Data.Empty
 open import Data.Sum
 open import Data.Product
 open import Data.Maybe
+
 open import Data.Nat using (ℕ; suc; zero; _+_)
+open import Data.Nat.Properties
 
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -19,11 +21,38 @@ open module sto = StrictTotalOrder order
 α : Set
 α = StrictTotalOrder.carrier order
 
+
+private
+  -- the following three definitions regarding ℕ₂ are copied entirely from Data.AVL
+
+  -- Bits. (I would use Fin 2 instead if Agda had "defined patterns",
+  -- so that I could pattern match on 1# instead of suc zero; the text
+  -- "suc zero" takes up a lot more space.)
+
+  data ℕ₂ : Set where
+    0# : ℕ₂
+    1# : ℕ₂
+
+  -- Addition.
+
+  infixl 6 _⊕_
+
+  _⊕_ : ℕ₂ → ℕ → ℕ
+  0# ⊕ n = n
+  1# ⊕ n = 1 + n
+
+  -- i ⊕ n -1 = pred (i ⊕ n).
+
+  _⊕_-1 : ℕ₂ → ℕ → ℕ
+  i ⊕ zero  -1 = 0
+  i ⊕ suc n -1 = i ⊕ n
+
+
 mutual
   data SimpleTree : ℕ → Set where
     leaf : SimpleTree zero
     node : ∀ {n₁ n₂} (x : α) → (l : SimpleTree n₁) → (r : SimpleTree n₂)
-           → (l*≤x : l *≤ x) → (x<*r : x <* r)
+           → (l*<x : l *< x) → (x<*r : x <* r)
            → SimpleTree (suc (n₂ + n₁))
 
   _<*_ : ∀ {n} → α → SimpleTree n → Set
@@ -34,35 +63,55 @@ mutual
   leaf *< a = ⊤
   (node x l r _ _) *< a = (x < a) × (l *< a) × (r *< a)
 
-  _*≤_ : ∀ {n} → SimpleTree n → α → Set
-  leaf *≤ a = ⊤
-  (node x l r _ _) *≤ a = ((x < a) ⊎ (x ≈ a))  × (l *≤ a) × (r *≤ a)
-
 trans<* : ∀ {n} → {x y : α} → (t : SimpleTree n) → x < y → y <* t → x <* t
 trans<* leaf _ tt = tt
 trans<* (node v l r l*<v v<*r) x<y (y<v , y<*l , y<*r) =
   sto.trans x<y y<v , trans<* l x<y y<*l , trans<* r x<y y<*r
 
+lemma-n+1+m≡1+n+m : (n m : ℕ) → n + suc m ≡ suc (n + m)
+lemma-n+1+m≡1+n+m 0 _ = refl
+lemma-n+1+m≡1+n+m (suc n) m = cong suc (lemma-n+1+m≡1+n+m n m)
+
+
+
 mutual
-  insert : ∀ {n} → α → SimpleTree n → SimpleTree (suc n)
-  insert a leaf = node a leaf leaf tt tt
-  insert a (node {n₁} {n₂} x l r l*≤x x<*r) with compare a x
-  ... | tri< a<x _ _ = subst SimpleTree (lemma-n+1+m≡1+n+m (suc n₂) n₁)
-                       (node x (insert a l) r {!!} x<*r)
-  ... | tri≈ _ a≈x _ = subst SimpleTree (lemma-n+1+m≡1+n+m (suc n₂) n₁)
-                       (node x (node a l leaf {!!} tt) r {!!} x<*r)
-  ... | tri> _ _ x<a = (node x l (insert a r) l*≤x {!!})
+  insert : ∀ {n} → α → SimpleTree n → ∃ λ i → SimpleTree (i ⊕ n)
+  insert a leaf = 1# , (node a leaf leaf tt tt)
+  insert a (node {n₁} {n₂} x l r l*<x x<*r) with compare a x
+  insert a (node {n₁} {n₂} x l r l*<x x<*r) | tri≈ _ _ _ = 0# , node {n₁} {n₂} x l r l*<x x<*r
+  insert a (node {n₁} {n₂} x l r l*<x x<*r) | tri< a<x _ _ with inspect (insert a l)
+  ... | (1# , t) with-≡ eq = 1# , (subst SimpleTree (lemma-n+1+m≡1+n+m (suc n₂) n₁)
+                       (node x t r (subst {!!} eq (ins-pres-*< l a<x l*<x)) x<*r))
+  ... | (0# , t) with-≡ eq = 0# , node x l r l*<x x<*r
+  insert a (node {n₁} {n₂} x l r l*<x x<*r) | tri> _ _ a>x with insert a r
+  ... | 1# , t = 1# , node x l t l*<x {!!}
+  ... | 0# , t = 0# , node x l r l*<x x<*r
 
-  lemma-n+1+m≡1+n+m : (n m : ℕ) → n + suc m ≡ suc (n + m)
-  lemma-n+1+m≡1+n+m 0 _ = refl
-  lemma-n+1+m≡1+n+m (suc n) m = cong suc (lemma-n+1+m≡1+n+m n m)
-
-  -- lemma₁ : ∀ {n} → {a x : α} → (t : SimpleTree n) → a < x → t *< x → (insert a t) *< x
-  -- lemma₁ {zero} {_} {_} leaf a<x t*<x = a<x , tt , tt
-  -- lemma₁ {n} {a} {x} (node y l r l*<y y<*r) a<x (y<x , l*<x , r*<x) with compare a y
-  -- ... | tri< _ _ _ = y<x , lemma₁ l a<x l*<x , r*<x
+  ins-pres-*< : ∀ {n} {a x : α}
+                → (t : SimpleTree n) → a < x → t *< x → proj₂ (insert a t) *< x
+  ins-pres-*< = {!!}
+  -- ins-pres-*< leaf a<x t*<x = a<x , tt , tt
+  -- ins-pres-*< .{suc (n₂ + n₁)} {a} {x} (node {n₁} {n₂} y l r l*<y y<*r) a<x (y<x , l*<x , r*<x)
+  --   with compare a y
   -- ... | tri≈ _ _ _ = y<x , l*<x , r*<x
-  -- ... | tri> _ _ _ = y<x , l*<x , lemma₁ r a<x r*<x
+  -- ins-pres-*< .{suc (n₂ + n₁)} {a} {x} (node {n₁} {n₂} y l r l*<y y<*r) a<x (y<x , l*<x , r*<x)
+  --   | tri> _ _ _ with insert a r
+  -- ... | 0# , t = y<x , l*<x , r*<x
+  -- ... | 1# , t = y<x , l*<x , {!!}
+  -- ins-pres-*< .{suc (n₂ + n₁)} {a} {x} (node {n₁} {n₂} y l r l*<y y<*r) a<x (y<x , l*<x , r*<x)
+  --   | tri< _ _ _ with insert a l
+  -- ... | 0# , t = y<x , l*<x , r*<x
+  -- ... | 1# , t = {!!}
+
+  -- insert-preserves-*< : ∀ {n} → {a x : α}
+  --                       → (t : SimpleTree n) → a < x → t *< x → proj₂ (insert a t) *< x
+  -- insert-preserves-*< {zero} {_} {_} leaf a<x t*<x = a<x , tt , tt
+  -- insert-preserves-*< .{suc (n₂ + n₁)} {a} {x}
+  --                     (node {n₁} {n₂} y l r l*<y y<*r) a<x (y<x , l*<x , r*<x)
+  --   with compare a y
+  -- ... | tri< _ _ _ = {!!} -- y<x , insert-preserves-*< l a<x l*<x , r*<x
+  -- ... | tri≈ _ _ _ = {!!} -- y<x , l*<x , r*<x
+  -- ... | tri> _ _ _ = {!!} -- y<x , l*<x , insert-preserves-*< r a<x r*<x
 
   -- lemma₂ : ∀ {n} → {a x : α} → (t : SimpleTree n) → x < a → x <* t → x <* (insert a t)
   -- lemma₂ {_} {_} leaf x<a x<*t = x<a , tt , tt
