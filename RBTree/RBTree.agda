@@ -1,22 +1,13 @@
-open import Data.Empty
 open import Data.Product
-open import Data.Sum
-open import Data.Maybe
-open import Data.Function
 
 open import Data.Unit using (⊤; tt)
 open import Data.Nat hiding (_≤_; _<_; _≟_; compare)
 
-open import Category.Monad
-
 open import Relation.Binary
-open import Relation.Nullary
-open import Relation.Binary.PropositionalEquality
 
 module RBTree (order : StrictTotalOrder) where
 
 open module sto = StrictTotalOrder order
-open module maybemonad = RawMonadPlus monadPlus
 
 α : Set
 α = StrictTotalOrder.carrier order
