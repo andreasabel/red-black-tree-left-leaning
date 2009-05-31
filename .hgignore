@@ -1,0 +1,5 @@
+syntax: glob
+
+lib
+.*.agda.el
+*.agdai
