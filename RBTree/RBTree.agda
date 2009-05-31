@@ -65,9 +65,9 @@ private
     frbrb- : ∀ {b c₁ c₂} → RBTree b c₁ → α → RBTree b black → α → RBTree b c₂ → fragR b
 
   balL : ∀ {b} → fragL b → ∃ λ c → RBTree (suc b) c
-  balL (flbrb- a x (rbr b y c ys) z d) =
-    let xs = {!!} ; zs = {!!} ; ys' = {!!}
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
+  balL (flbrb- a x (rbr b y c (b*<y , y<*c)) z d) =
+    let xs = {!!} ; zs = {!!} ; ys = ({!!} , {!!} , b*<y) , {!!} , y<*c , {!!}
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
   balL (flbr-b (rbr a x b xs) y c z d) =
     let zs = {!!} ; ys = {!!}
     in , rbr (rbb a x b xs) y (rbb c z d zs) ys
@@ -78,10 +78,10 @@ private
     let zs = {!!} ; ys = {!!}
     in , rbb (rbr (rbb a x b xs) y c ys) z d zs
   balL (flbr-b rbl y c z d)            =
-    let zs = {!!} ; ys = {!!}
+    let zs = ({!!} , tt , {!!}) , {!!} ; ys = tt , {!!}
     in , rbb (rbr rbl y c ys) z d zs
   balL (flbrb- b y rbl z d)            =
-    let zs = {!!} ; ys = {!!}
+    let zs = ({!!} , {!!} , tt) , {!!} ; ys = {!!} , tt
     in , rbb (rbr b y rbl ys) z d zs
 
   balR : ∀ {b} → fragR b → ∃ λ c → RBTree (suc b) c
