@@ -65,20 +65,44 @@ private
     frbrb- : ∀ {b c₁ c₂} → RBTree b c₁ → α → RBTree b black → α → RBTree b c₂ → fragR b
 
   balL : ∀ {b} → fragL b → ∃ λ c → RBTree (suc b) c
-  balL (flbrb- a x (rbr b y c ys) z d) = , rbr (rbb a x b {!!}) y (rbb c z d {!!}) {!!}
-  balL (flbr-b (rbr a x b xs) y c z d) = , rbr (rbb a x b {!!}) y (rbb c z d {!!}) {!!}
-  balL (flbrb- a x (rbb b y c ys) z d) = , rbb (rbr a x (rbb b y c {!!}) {!!}) z d {!!}
-  balL (flbr-b (rbb a x b xs) y c z d) = , rbb (rbr (rbb a x b {!!}) y c {!!}) z d {!!}
-  balL (flbr-b rbl y c z d)            = , rbb (rbr rbl y c {!!}) z d {!!}
-  balL (flbrb- b y rbl z d)            = , rbb (rbr b y rbl {!!}) z d {!!}
+  balL (flbrb- a x (rbr b y c ys) z d) =
+    let xs = {!!} ; zs = {!!} ; ys' = {!!}
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
+  balL (flbr-b (rbr a x b xs) y c z d) =
+    let zs = {!!} ; ys = {!!}
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+  balL (flbrb- a x (rbb b y c ys) z d) =
+    let xs = {!!} ; zs = {!!}
+    in , rbb (rbr a x (rbb b y c ys) xs) z d zs
+  balL (flbr-b (rbb a x b xs) y c z d) =
+    let zs = {!!} ; ys = {!!}
+    in , rbb (rbr (rbb a x b xs) y c ys) z d zs
+  balL (flbr-b rbl y c z d)            =
+    let zs = {!!} ; ys = {!!}
+    in , rbb (rbr rbl y c ys) z d zs
+  balL (flbrb- b y rbl z d)            =
+    let zs = {!!} ; ys = {!!}
+    in , rbb (rbr b y rbl ys) z d zs
 
   balR : ∀ {b} → fragR b → ∃ λ c → RBTree (suc b) c
-  balR (frbr-b a x (rbr b y c ys) z d) = , rbr (rbb a x b {!!}) y (rbb c z d {!!}) {!!}
-  balR (frbrb- a x b y (rbr c z d zs)) = , rbr (rbb a x b {!!}) y (rbb c z d {!!}) {!!}
-  balR (frbr-b a x (rbb b y c ys) z d) = , rbb a x (rbr (rbb b y c {!!}) z d {!!}) {!!}
-  balR (frbrb- a x b y (rbb c z d zs)) = , rbb a x (rbr b y (rbb c z d {!!}) {!!}) {!!}
-  balR (frbr-b a x rbl y c)            = , rbb a x (rbr rbl y c {!!}) {!!}
-  balR (frbrb- a x b y rbl)            = , rbb a x (rbr b y rbl {!!}) {!!}
+  balR (frbr-b a x (rbr b y c ys) z d) =
+    let xs = {!!} ; zs = {!!} ; ys' = {!!}
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
+  balR (frbrb- a x b y (rbr c z d zs)) =
+    let xs = {!!} ; ys = {!!}
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+  balR (frbr-b a x (rbb b y c ys) z d) =
+    let xs = {!!} ; zs = {!!}
+    in , rbb a x (rbr (rbb b y c ys) z d zs) xs
+  balR (frbrb- a x b y (rbb c z d zs)) =
+    let xs = {!!} ; ys = {!!}
+    in , rbb a x (rbr b y (rbb c z d zs) ys) xs
+  balR (frbr-b a x rbl y c)            =
+    let xs = {!!} ; ys = {!!}
+    in , rbb a x (rbr rbl y c ys) xs
+  balR (frbrb- a x b y rbl)            =
+    let xs = {!!} ; ys = {!!}
+    in , rbb a x (rbr b y rbl ys) xs
 
   mutual
     ins : ∀ {b} → α → RBTree b black → ∃ (λ c → RBTree b c)
