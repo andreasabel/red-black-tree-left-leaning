@@ -46,6 +46,20 @@ mutual
   (rbr l k r _) *< a = (k < a) × (l *< a) × (r *< a)
   (rbb l k r _) *< a = (k < a) × (l *< a) × (r *< a)
 
+trans<* : ∀ {h c} → {x y : α} (t : RBTree h c) → x < y → y <* t → x <* t
+trans<* rbl _ tt = tt
+trans<* (rbb l v r (l*<v , v<*r)) x<y (y<v , y<*l , y<*r) =
+  trans x<y y<v , trans<* l x<y y<*l , trans<* r x<y y<*r
+trans<* (rbr l v r (l*<v , v<*r)) x<y (y<v , y<*l , y<*r) =
+  trans x<y y<v , trans<* l x<y y<*l , trans<* r x<y y<*r
+
+trans*< : ∀ {h c} → {x y : α} (t : RBTree h c) → t *< x → x < y → t *< y
+trans*< rbl tt _ = tt
+trans*< (rbb l v r (l*<v , v<*r)) (v<x , l*<x , r*<x) x<y
+  = trans v<x x<y , trans*< l l*<x x<y , trans*< r r*<x x<y
+trans*< (rbr l v r (l*<v , v<*r)) (v<x , l*<x , r*<x) x<y
+  = trans v<x x<y , trans*< l l*<x x<y , trans*< r r*<x x<y
+
 empty : RBTree 0 black
 empty = rbl
 
@@ -61,8 +75,16 @@ private
     flbr-b : ∀ {b c₁ c₂} → RBTree b c₁ → α → RBTree b black → α → RBTree b c₂ → fragL b
 
   data fragR : ℕ → Set where
-    frbr-b : ∀ {b c₁ c₂} → RBTree b c₁ → α → RBTree b c₂ → α → RBTree b black → fragR b
-    frbrb- : ∀ {b c₁ c₂} → RBTree b c₁ → α → RBTree b black → α → RBTree b c₂ → fragR b
+    frbr-b : ∀ {h c₁ c₂}
+             → (a : RBTree h c₁) → (x : α) → (y : RBTree h c₂)
+             → (z : α) → (d : RBTree h black)
+             → a *< x → x < z → x <* y → (y *< z × z <* d)
+             → fragR h
+    frbrb- : ∀ {h c₁ c₂}
+             → (a : RBTree h c₁) → (x : α) → (b : RBTree h black)
+             → (y : α) → (z : RBTree h c₂)
+             → a *< x → x < y → (b *< y × y <* z)
+             → fragR h
 
   balL : ∀ {b} → fragL b → ∃ λ c → RBTree (suc b) c
   balL (flbrb- a x (rbr b y c (b*<y , y<*c)) z d) =
@@ -84,25 +106,29 @@ private
     let zs = ({!!} , {!!} , tt) , {!!} ; ys = {!!} , tt
     in , rbb (rbr b y rbl ys) z d zs
 
-  balR : ∀ {b} → fragR b → ∃ λ c → RBTree (suc b) c
-  balR (frbr-b a x (rbr b y c ys) z d) =
-    let xs = {!!} ; zs = {!!} ; ys' = {!!}
+  balR : ∀ {h} → fragR h → ∃ λ c → RBTree (suc h) c
+  balR (frbr-b a x (rbr b y c (b*<y , y<*c)) z d
+    a*<x x<z (x<y , x<*b , x<*c) ((y<z , b*<z , c*<z) , z<*d)) =
+    let xs = a*<x , x<*b ; zs = c*<z , z<*d
+        ys' = (x<y , trans*< a a*<x x<y , b*<y) , y<z , y<*c , {!!}
     in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
-  balR (frbrb- a x b y (rbr c z d zs)) =
-    let xs = {!!} ; ys = {!!}
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
-  balR (frbr-b a x (rbb b y c ys) z d) =
-    let xs = {!!} ; zs = {!!}
+  balR (frbrb- a x b y (rbr c z d zs) a*<x x<y (b*<y , ys)) =
+    let xs = a*<x , {!!} ; ys' = (x<y , trans*< a a*<x x<y , b*<y) , ys
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
+  balR (frbr-b a x (rbb b y c ys) z d a*<x x<z x<*y zs) =
+    let xs = a*<x , x<z , x<*y , {!!}
     in , rbb a x (rbr (rbb b y c ys) z d zs) xs
-  balR (frbrb- a x b y (rbb c z d zs)) =
-    let xs = {!!} ; ys = {!!}
+  balR (frbrb- a x b y (rbb c z d zs) a*<x x<y (b*<y , y<z , y<*c , y<*d)) =
+    let xs = a*<x , x<y , {!!} ,
+             trans x<y y<z , trans<* c x<y y<*c , trans<* d x<y y<*d
+        ys = (b*<y , y<z , y<*c , y<*d)
     in , rbb a x (rbr b y (rbb c z d zs) ys) xs
-  balR (frbr-b a x rbl y c)            =
-    let xs = {!!} ; ys = {!!}
+  balR (frbr-b a x rbl y c a*<x x<y x<*y (tt , y<*c)) =
+    let xs = a*<x , x<y , tt , trans<* c x<y y<*c ; ys = tt , y<*c
     in , rbb a x (rbr rbl y c ys) xs
-  balR (frbrb- a x b y rbl)            =
-    let xs = {!!} ; ys = {!!}
-    in , rbb a x (rbr b y rbl ys) xs
+  balR (frbrb- a x b y rbl a*<x x<y (b*<y , tt)) =
+    let xs = a*<x , x<y , {!!} , tt
+    in , rbb a x (rbr b y rbl (b*<y , tt)) xs
 
   mutual
     ins : ∀ {b} → α → RBTree b black → ∃ (λ c → RBTree b c)
@@ -131,8 +157,8 @@ private
            → ∃ (λ c → RBTree (suc h) c)
     insR k a x (rbr b y c ys) xs x<k with compare k y
     ... | tri≈ _ _ _ = , rbb a x (rbr b y c ys) xs
-    ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c)
-    ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c)))
+    ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c {!!} {!!} {!!} {!!})
+    ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c)) {!!} {!!} {!!})
     insR k a x (rbb b y c ys) (a<*x , _) x<k =
       , rbb a x (proj₂ (ins k (rbb b y c ys))) (a<*x , {!!})
     insR k a x rbl (a<*x , tt) x<k =
