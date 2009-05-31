@@ -55,52 +55,57 @@ empty = rbl
 private
 
   data fragL : Set where
-    -- consisting, in order, of:
-    -- left child tree, key, left granchild tree, right child key, right granchild tree
-    flbb : ∀ {c₁ c₂ c₃} → RBTree c₁    → α → RBTree c₂    → α → RBTree c₃    → fragL
-    flbrrb : ∀ {c₁}     → RBTree red   → α → RBTree black → α → RBTree c₁    → fragL
-    flbrbr : ∀ {c₁}     → RBTree black → α → RBTree red   → α → RBTree c₁    → fragL
-    flbrbb : ∀ {c₁}     → RBTree black → α → RBTree black → α → RBTree c₁    → fragL
-    flrb : ∀ {c₁ c₂}    → RBTree c₁    → α → RBTree c₂    → α → RBTree black → fragL
+    flbr-b : ∀ {c₁ c₂} → RBTree c₁ → α → RBTree black → α → RBTree c₂ → fragL
+    flbrb- : ∀ {c₁ c₂} → RBTree black → α → RBTree c₁ → α → RBTree c₂ → fragL
 
   data fragR : Set where
-    -- consisting, in order, of:
-    -- left granchild tree, left child key, right granchild tree, key, right child tree
-    frbb : ∀ {c₁ c₂ c₃} → RBTree c₁    → α → RBTree c₂    → α → RBTree c₃    → fragR
-    frbrbr : ∀ {c₁}     → RBTree c₁    → α → RBTree black → α → RBTree red   → fragR
-    frbrrb : ∀ {c₁}     → RBTree c₁    → α → RBTree red   → α → RBTree black → fragR
-    frbrbb : ∀ {c₁}     → RBTree c₁    → α → RBTree black → α → RBTree black → fragR
-    frrb : ∀ {c₂ c₃}    → RBTree black → α → RBTree c₂    → α → RBTree c₃    → fragR
+    frbr-b : ∀ {c₁ c₂} → RBTree c₁ → α → RBTree c₂ → α → RBTree black → fragR
+    frbrb- : ∀ {c₁ c₂} → RBTree c₁ → α → RBTree black → α → RBTree c₂ → fragR
 
   balL : fragL → ∃ λ c → RBTree c
-  balL (flbrrb (rbr a x b) y c z d) = , rbr (rbb a x b) y (rbb c z d)
-  balL (flbrbr a x (rbr b y c) z d) = , rbr (rbb a x b) y (rbb c z d)
-  balL (flbrbb a x b y c)           = , rbb (rbr a x b) y c
-  balL (flbb   a x b y c)           = , rbb (rbb a x b) y c
-  balL (flrb   a x b y c)           = , rbr (rbb a x b) y c
+  balL (flbrb- a x (rbr b y c) z d) = , rbr (rbb a x b) y (rbb c z d)
+  balL (flbr-b (rbr a x b) y c z d) = , rbr (rbb a x b) y (rbb c z d)
+  balL (flbrb- a x (rbb b y c) z d) = , rbb (rbr a x (rbb b y c)) z d
+  balL (flbr-b (rbb a x b) y c z d) = , rbb (rbr (rbb a x b) y c) z d
+  balL (flbr-b rbl y c z d)         = , rbb (rbr rbl y c) z d
+  balL (flbrb- b y rbl z d)         = , rbb (rbr b y rbl) z d
 
   balR : fragR → ∃ λ c → RBTree c
-  balR (frbrbr a x b y (rbr c z d)) = , rbr (rbb a x b) y (rbb c z d)
-  balR (frbrrb a x (rbr b y c) z d) = , rbr (rbb a x b) y (rbb c z d)
-  balR (frbrbb a x b y c)           = , rbb a           x (rbr b y c)
-  balR (frbb   a x b y c)           = , rbb a           x (rbb b y c)
-  balR (frrb   a x b y c)           = , rbr a           x (rbb b y c)
+  balR (frbr-b a x (rbr b y c) z d) = , rbr (rbb a x b) y (rbb c z d)
+  balR (frbrb- a x b y (rbr c z d)) = , rbr (rbb a x b) y (rbb c z d)
+  balR (frbr-b a x (rbb b y c) z d) = , rbb a x (rbr (rbb b y c) z d)
+  balR (frbr-b a x rbl y c)         = , rbb a x (rbr rbl y c)
+  balR (frbrb- a x b y (rbb c z d)) = , rbb a x (rbr b y (rbb c z d))
+  balR (frbrb- a x b y rbl)         = , rbb a x (rbr b y rbl)
 
   makeBlack : ∀ {c} → RBTree c → RBTree black
   makeBlack rbl = rbl
   makeBlack (rbb l k r) = rbb l k r
   makeBlack (rbr l k r) = rbb l k r
 
-  ins : ∀ {c} → α → RBTree c → ∃ (λ c' → RBTree c')
-  ins k rbl = , rbr rbl k rbl
-  ins x (rbr l y r) with compare x y
-  ... | tri< _ _ _ = {!!}
-  ... | tri≈ _ _ _ = , rbr l y r
-  ... | tri> _ _ _ = {!!}
-  ins x (rbb l y r) with compare x y
-  ... | tri< _ _ _ = {!!}
-  ... | tri≈ _ _ _ = , rbb l y r
-  ... | tri> _ _ _ = {!!}
+  mutual
+    ins : α → RBTree black → ∃ (λ c → RBTree c)
+    ins k rbl = , rbr rbl k rbl
+    ins k (rbb a x b) with compare k x
+    ... | tri≈ _ _ _ = , (rbb a x b)
+    ... | tri< _ _ _ = insL k a x b
+    ... | tri> _ _ _ = insR k a x b
+
+    insL : ∀ {c₁ c₂} → α → RBTree c₁ → α → RBTree c₂ → ∃ (λ c → RBTree c)
+    insL k (rbr a x b) y c with compare k x
+    ... | tri≈ _ _ _ = , (rbb (rbr a y b) x c)
+    ... | tri< _ _ _ = balL (flbr-b (proj₂ (ins k a)) x b y c)
+    ... | tri> _ _ _ = balL (flbrb- a x (proj₂ (ins k b)) y c)
+    insL k (rbb a x b) y c = , rbb (proj₂ (ins k (rbb a x b))) y c
+    insL k rbl x b = , rbb (rbr rbl k rbl) x b
+
+    insR : ∀ {c₁ c₂} → α → RBTree c₁ → α → RBTree c₂ → ∃ (λ c → RBTree c)
+    insR k a x (rbr b y c) with compare k y
+    ... | tri≈ _ _ _ = , (rbb a x (rbr b y c))
+    ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c)
+    ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c)))
+    insR k a x (rbb b y c) = , rbb a x (proj₂ (ins k (rbb b y c)))
+    insR k a x rbl = , rbb a x (rbr rbl k rbl)
 
 insert : α → RBTree black → RBTree black
 insert k t = makeBlack (proj₂ (ins k t))
