@@ -83,7 +83,7 @@ private
     frbrb- : ∀ {h c₁ c₂}
              → (a : RBTree h c₁) → (x : α) → (b : RBTree h black)
              → (y : α) → (z : RBTree h c₂)
-             → a *< x → x < y → (b *< y × y <* z)
+             → a *< x → x < y → x <* b → (b *< y × y <* z)
              → fragR h
 
   balL : ∀ {b} → fragL b → ∃ λ c → RBTree (suc b) c
@@ -113,30 +113,29 @@ private
     let xs = a*<x , x<*b
         zs = c*<z , z<*d
         a*<y = trans*< a a*<x x<y
-        y<*d = {!!}
+        y<*d = trans<* d y<z z<*d
         ys = (x<y , a*<y , b*<y) , y<z , y<*c , y<*d
 
     in , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
-  balR (frbrb- a x b y (rbr c z d zs) a*<x x<y (b*<y , y<*z)) =
-    let x<*b = {!!}
-        xs = a*<x , x<*b
+  balR (frbrb- a x b y (rbr c z d zs) a*<x x<y x<*b (b*<y , y<*z)) =
+    let xs = a*<x , x<*b
         a*<y = trans*< a a*<x x<y
         ys = (x<y , a*<y , b*<y) , y<*z
 
     in , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
-  balR (frbr-b a x (rbb b y c ys) z d a*<x x<z x<*y zs) =
-    let x<*d = {!!}
+  balR (frbr-b a x (rbb b y c ys) z d a*<x x<z x<*y ((y<z , b*<z , c*<z) , z<*d)) =
+    let x<*d = trans<* d x<z z<*d
         xs = a*<x , x<z , x<*y , x<*d
+        zs = (y<z , b*<z , c*<z) , z<*d
 
     in , rbb a x (rbr (rbb b y c ys) z d zs) xs
 
-  balR (frbrb- a x b y (rbb c z d zs) a*<x x<y (b*<y , y<z , y<*c , y<*d)) =
+  balR (frbrb- a x b y (rbb c z d zs) a*<x x<y x<*b (b*<y , y<z , y<*c , y<*d)) =
     let x<z = trans x<y y<z
         x<*c = trans<* c x<y y<*c
         x<*d = trans<* d x<y y<*d
-        x<*b = {!!}
         xs = a*<x , x<y , x<*b , x<z , x<*c , x<*d
         ys = b*<y , y<z , y<*c , y<*d
 
@@ -149,9 +148,8 @@ private
 
     in , rbb a x (rbr rbl y c ys) xs
 
-  balR (frbrb- a x b y rbl a*<x x<y (b*<y , tt)) =
-    let x<*b = {!!}
-        xs = a*<x , x<y , x<*b , tt
+  balR (frbrb- a x b y rbl a*<x x<y x<*b (b*<y , tt)) =
+    let xs = a*<x , x<y , x<*b , tt
 
     in , rbb a x (rbr b y rbl (b*<y , tt)) xs
 
@@ -181,15 +179,24 @@ private
            → (k : α) → (a : RBTree h c₁) → (x : α) → (b : RBTree h c₂)
            → a *< x × x <* b → x < k
            → ∃ (λ c → RBTree (suc h) c)
-    insR k a x (rbr b y c ys) xs x<k with compare k y
-    ... | tri≈ _ _ _ = , rbb a x (rbr b y c ys) xs
-    ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c {!!} {!!} {!!} {!!})
-    ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c)) {!!} {!!} {!!})
-    insR k a x (rbb b y c ys) (a<*x , _) x<k =
-      let y' = proj₂ (ins k (rbb b y c ys))
-      in , rbb a x y' (a<*x , {!!})
+
     insR k a x rbl (a<*x , tt) x<k =
       , rbb a x (rbr rbl k rbl (tt , tt)) (a<*x , x<k , tt , tt)
+
+    insR k a x (rbb b y c ys)
+         (a<*x , x<y , x<*b , x<*c) x<k =
+      let y' = proj₂ (ins k (rbb b y c ys))
+      in , rbb a x y' (a<*x , {!!})
+
+    insR k a x (rbr b y c (b*<y , y<*c))
+         (a*<x , x<y , x<*b , x<*c) x<k
+         with compare k y
+    ... | tri≈ _ _ _ = , rbb a x (rbr b y c (b*<y , y<*c))
+                             (a*<x , x<y , x<*b , x<*c)
+    ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c
+                            a*<x x<y {!!} ({!!} , y<*c))
+    ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c))
+                            a*<x x<y x<*b (b*<y , {!!}))
 
   makeBlack : ∀ {b c} → RBTree b c → ∃ λ i → RBTree (i + b) black
   makeBlack rbl = 0 , rbl
