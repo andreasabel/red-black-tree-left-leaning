@@ -107,27 +107,52 @@ private
     in , rbb (rbr b y rbl ys) z d zs
 
   balR : ∀ {h} → fragR h → ∃ λ c → RBTree (suc h) c
+
   balR (frbr-b a x (rbr b y c (b*<y , y<*c)) z d
     a*<x x<z (x<y , x<*b , x<*c) ((y<z , b*<z , c*<z) , z<*d)) =
-    let xs = a*<x , x<*b ; zs = c*<z , z<*d
-        ys' = (x<y , trans*< a a*<x x<y , b*<y) , y<z , y<*c , {!!}
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
-  balR (frbrb- a x b y (rbr c z d zs) a*<x x<y (b*<y , ys)) =
-    let xs = a*<x , {!!} ; ys' = (x<y , trans*< a a*<x x<y , b*<y) , ys
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys'
+    let xs = a*<x , x<*b
+        zs = c*<z , z<*d
+        a*<y = trans*< a a*<x x<y
+        y<*d = {!!}
+        ys = (x<y , a*<y , b*<y) , y<z , y<*c , y<*d
+
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+
+  balR (frbrb- a x b y (rbr c z d zs) a*<x x<y (b*<y , y<*z)) =
+    let x<*b = {!!}
+        xs = a*<x , x<*b
+        a*<y = trans*< a a*<x x<y
+        ys = (x<y , a*<y , b*<y) , y<*z
+
+    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+
   balR (frbr-b a x (rbb b y c ys) z d a*<x x<z x<*y zs) =
-    let xs = a*<x , x<z , x<*y , {!!}
+    let x<*d = {!!}
+        xs = a*<x , x<z , x<*y , x<*d
+
     in , rbb a x (rbr (rbb b y c ys) z d zs) xs
+
   balR (frbrb- a x b y (rbb c z d zs) a*<x x<y (b*<y , y<z , y<*c , y<*d)) =
-    let xs = a*<x , x<y , {!!} ,
-             trans x<y y<z , trans<* c x<y y<*c , trans<* d x<y y<*d
-        ys = (b*<y , y<z , y<*c , y<*d)
+    let x<z = trans x<y y<z
+        x<*c = trans<* c x<y y<*c
+        x<*d = trans<* d x<y y<*d
+        x<*b = {!!}
+        xs = a*<x , x<y , x<*b , x<z , x<*c , x<*d
+        ys = b*<y , y<z , y<*c , y<*d
+
     in , rbb a x (rbr b y (rbb c z d zs) ys) xs
+
   balR (frbr-b a x rbl y c a*<x x<y x<*y (tt , y<*c)) =
-    let xs = a*<x , x<y , tt , trans<* c x<y y<*c ; ys = tt , y<*c
+    let x<*c = trans<* c x<y y<*c
+        xs = a*<x , x<y , tt , x<*c
+        ys = tt , y<*c
+
     in , rbb a x (rbr rbl y c ys) xs
+
   balR (frbrb- a x b y rbl a*<x x<y (b*<y , tt)) =
-    let xs = a*<x , x<y , {!!} , tt
+    let x<*b = {!!}
+        xs = a*<x , x<y , x<*b , tt
+
     in , rbb a x (rbr b y rbl (b*<y , tt)) xs
 
   mutual
@@ -147,7 +172,8 @@ private
     ... | tri< _ _ _ = balL (flbr-b (proj₂ (ins k a)) x b y c)
     ... | tri> _ _ _ = balL (flbrb- a x (proj₂ (ins k b)) y c)
     insL k (rbb a x b xs) y c ((x<y , ys) , y<*c) k<x =
-      , rbb (proj₂ (ins k (rbb a x b xs))) y c ({!!} , y<*c)
+      let x' = proj₂ (ins k (rbb a x b xs))
+      in , rbb x' y c ({!!} , y<*c)
     insL k rbl x b (tt , x<*b) k<x =
       , rbb (rbr rbl k rbl (tt , tt)) x b ((k<x , tt , tt) , x<*b)
 
@@ -160,7 +186,8 @@ private
     ... | tri< _ _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c {!!} {!!} {!!} {!!})
     ... | tri> _ _ _ = balR (frbrb- a x b y (proj₂ (ins k c)) {!!} {!!} {!!})
     insR k a x (rbb b y c ys) (a<*x , _) x<k =
-      , rbb a x (proj₂ (ins k (rbb b y c ys))) (a<*x , {!!})
+      let y' = proj₂ (ins k (rbb b y c ys))
+      in , rbb a x y' (a<*x , {!!})
     insR k a x rbl (a<*x , tt) x<k =
       , rbb a x (rbr rbl k rbl (tt , tt)) (a<*x , x<k , tt , tt)
 
