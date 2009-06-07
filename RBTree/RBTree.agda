@@ -204,10 +204,10 @@ private
     insL k rbl x b (tt , x<*b) k<x =
       , rbb (rbr rbl k rbl (tt , tt)) x b ((k<x , tt , tt) , x<*b)
 
-    insL k (rbb a x b xs) y c ys k<x =
+    insL k (rbb a x b xs) y c (ys , y<*c) k<y =
       let xt = (rbb a x b xs)
           xt' = proj₂ (ins k xt)
-      in , rbb xt y c ys
+      in , rbb xt' y c (ins-pres-*< (rbb a x b xs) k<y ys , y<*c)
 
     insL k (rbr a x b (a*<x , x<*b)) y c ((x<y , a*<y , b*<y) , y<*c)  k<y with compare k x
     ... | tri≈ _ _ _ = , rbb (rbr a x b (a*<x , x<*b)) y c
