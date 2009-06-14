@@ -244,17 +244,25 @@ private
 
     ins-pres-*< : ∀ {b a x} (t : RBTree b black) → a < x → t *< x → proj₂ (ins a t) *< x
     ins-pres-*< rbl a<x _ = a<x , tt , tt
-    ins-pres-*< {suc b} {a} {x} (rbb l y r _) a<x t*<x with compare a y
-    ... | tri≈ _ _ _ = t*<x
-    ... | tri< a<y _ _ = insL-pres-*< l r a<x a<y {!!}
+    ins-pres-*< {suc b} {a} {x} (rbb l y r ys) a<x (y<x , (l*<x , r*<x)) with compare a y
+    ... | tri≈ _ _ _ = (y<x , (l*<x , r*<x))
+    ... | tri< a<y _ _ = insL-pres-*< l r y<x (l*<x , r*<x) a<y ys
     ... | tri> _ _ y<a = {!!}
 
     insL-pres-*< : ∀ {b a x y c₁ c₂}
                    (l : RBTree b c₁) (r : RBTree b c₂)
-                   → (a<x : a < x) (a<y : a < y) (ys : l *< y × y <* r)
+                   → (y<x : y < x) → (xs : l *< x × r *< x) → (a<y : a < y)
+                   → (ys : l *< y × y <* r)
                    → proj₂ (insL a l y r ys a<y) *< x
-    insL-pres-*< rbl r a<x a<y ys = {!!}
-    insL-pres-*< t r a<x a<y ys = {!!}
+    insL-pres-*< rbl r y<x (l*<x , r*<x) a<y (l*<y , y<*r) =
+                 y<x , (trans a<y y<x , tt , tt) , r*<x
+    insL-pres-*< (rbb l' z r' zs) r y<x (l*<x , r*<x) a<y (l*<y , y<*r) =
+                 y<x , ins-pres-*< (rbb l' z r' zs) (trans a<y y<x) l*<x , r*<x
+    insL-pres-*< {b} {a} {x} (rbr l' z r' (l'*<z , z<*r')) r y<x (l*<x , r*<x) a<y ((z<y , l'*<y , r'*<y) , y<*r)
+      with compare a z
+    ... | tri≈ _ _ _ = y<x , l*<x , r*<x
+    ... | tri< a<z _ _ = {!!}
+    ... | tri> _ _ a>z = {!!}
 
     ins-pres-<* : ∀ {b a x} (t : RBTree b black) → x < a → x <* t → x <* proj₂ (ins a t)
     ins-pres-<* t x<a x<*t = {!!}
