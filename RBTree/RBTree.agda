@@ -261,11 +261,47 @@ private
     insL-pres-*< {b} {a} {x} (rbr l' z r' (l'*<z , z<*r')) r y<x (l*<x , r*<x) a<y ((z<y , l'*<y , r'*<y) , y<*r)
       with compare a z
     ... | tri≈ _ _ _ = y<x , l*<x , r*<x
-    ... | tri< a<z _ _ = {!!}
-    ... | tri> _ _ a>z = {!!}
+    ... | tri< a<z _ _ = let l'' = proj₂ (ins a l')
+                             ins-s₁ = ins-pres-*< l' a<z l'*<z
+                             ins-s₂ = ins-pres-*< l' (trans a<y y<x) (trans*< l' l'*<y y<x)
+                         in balL-*<₁ l'' r (ins-s₁ , z<*r') y<*r ins-s₂
+                            (trans*< r' r'*<y y<x) (trans z<y y<x) y<x r*<x
+    ... | tri> _ _ z<a = let r'' = proj₂ (ins a r')
+                             ins-s₁ = ins-pres-<* r' z<a z<*r'
+                             ins-s₂ = ins-pres-*< r' a<y r'*<y
+                             ins-s₃ = ins-pres-*< r' (trans a<y y<x) (trans*< r' r'*<y y<x)
+                          in balL-*<₂ r'' r (l'*<z , ins-s₁) ins-s₂ z<y
+                             (trans*< l' l'*<y y<x) ins-s₃ y<x r*<x
 
     ins-pres-<* : ∀ {b a x} (t : RBTree b black) → x < a → x <* t → x <* proj₂ (ins a t)
     ins-pres-<* t x<a x<*t = {!!}
+
+    balL-*<₁ : ∀ {k h c₁ c₂ c y z y<z c*<z}
+               → (t : RBTree h c₁) → (d : RBTree h c₂)
+               → (ys : t *< y × y <* c) → (z<*d : z <* d)
+               → t *< k → c *< k → y < k → z < k → d *< k
+               → proj₂ (balL (flbr-b t y c z d ys y<z c*<z z<*d)) *< k
+    balL-*<₁ rbl d (t*<y , y<*c) z<*d t*<k c*<k y<k z<k d*<k =
+      z<k , (y<k , tt , c*<k) , d*<k
+    balL-*<₁ (rbr a x b xs) d (t*<y , y<*c) z<*d t*<k c*<k y<k z<k d*<k =
+      y<k , t*<k , z<k , c*<k , d*<k
+    balL-*<₁ (rbb a x b xs) d ((x<y , a*<y , b*<y) , y<*c) z<*d t*<k c*<k y<k z<k d*<k =
+      z<k , (y<k , (trans x<y y<k , trans*< a a*<y y<k , trans*< b b*<y y<k) , c*<k) , d*<k
+
+    balL-*<₂ : ∀ {k h c₁ c₂ a x z}
+               → (t : RBTree h c₁) → (d : RBTree h c₂)
+               → (xs : a *< x × x <* t)
+               → {z<*d : z <* d} → (t*<z : t *< z) → (x<z : x < z)
+               → a *< k → t *< k → z < k → d *< k
+               → proj₂ (balL (flbrb- a x t z d xs x<z t*<z z<*d)) *< k
+    balL-*<₂ rbl d (a*<x , x<*t) t*<z x<z a*<k t*<k z<k d*<k =
+      z<k , (trans x<z z<k , a*<k , tt) , d*<k
+    balL-*<₂ (rbr b y c (b*<y , y<*c)) d (a*<x , (x<y , x<*b , x<*c))
+      (y<z , b*<z , c*<z) x<z a*<k t*<k z<k d*<k =
+      trans y<z z<k , (trans x<z z<k , a*<k , trans*< b b*<z z<k) ,
+      z<k , trans*< c c*<z z<k , d*<k
+    balL-*<₂ (rbb l k' r y) d (a*<x , x<*t) t*<z x<z a*<k t*<k z<k d*<k =
+      z<k , (trans x<z z<k , a*<k , t*<k) , d*<k
 
   makeBlack : ∀ {b c} → RBTree b c → ∃ λ i → RBTree (i + b) black
   makeBlack rbl = 0 , rbl
