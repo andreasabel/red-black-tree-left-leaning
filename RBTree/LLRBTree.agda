@@ -103,7 +103,16 @@ data Almost (β : Bounds) : Type → ℕ → Set where
   nrrʳ : ∀ {n} → (a : A) → a is β
        → Tree′ (leftOf a ∷ β) black n → Tree′ (rightOf a ∷ β) red n
        → Almost β nrrʳ n
+
+data TypeDel : Set where
+  dok    : TypeDel
+  dnbbr  : TypeDel   -- right leaning 3 node
+  dnbrr  : TypeDel   -- 4 node
+
+data AlmostDel (β : Bounds) : Type → ℕ → Set where
+  ok   : ∀ {c n} → Tree′ β c n → AlmostDel β ok n
   
+
 rotateLeft : ∀ {β n} → (b : A) → b is β
            → Tree′ (leftOf b ∷ β) black n → Tree′ (rightOf b ∷ β) red n
            → Tree′ β black (n + 1)
@@ -172,11 +181,12 @@ mutual
   ... | red   , r′ = _ , nrrʳ b pb l r′
   ... | black , r′ = _ , ok (nr b pb l r′)
   
+
 ------------------------------------------------------------------------
-  
+
 data Tree : Set where
   tree : ∀ {n} → Tree′ [] black n → Tree
-  
+
 insert : A → Tree → Tree
 insert x (tree t) with insertB x tt t
 ... | red   , nr a pa l r = tree (nb a pa l r)
