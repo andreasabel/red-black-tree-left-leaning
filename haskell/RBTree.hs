@@ -129,35 +129,122 @@ perform d f = do
 
 fixUp :: Transform a ()
 fixUp = do
-  (t, cx) <- get
-  when (isMaybeRed (maybeRightOf t))
-           (perform "fixup: rotateLeft" rotateLeft)
-  when (isMaybeRed (maybeRightOf t) && isMaybeRed (maybeLeftOf t >>= maybeLeftOf))
-           (perform "fixup: rotateRight" rotateRight)
-  when (isMaybeRed (maybeLeftOf t) && isMaybeRed (maybeRightOf t))
-           (perform "fixup: colorFlip" colorFlip)
+  let throwOverRightLeaning (Node _ (Node Black _ _ _) _ (Node Red _ _ _)) =
+        perform "fix RL: rotateLeft" rotateLeft
+      throwOverRightLeaning (Node _ Leaf _ (Node Red _ _ _)) =
+        perform "fix RL: rotateLeft" rotateLeft
+      throwOverRightLeaning _ = return ()
 
-moveRedLeft :: Transform a ()
-moveRedLeft = do
-  perform "moveRedLeft: colorFlip and done" colorFlip
-  (t, cx) <- get
-  when ((isRed . leftOf . rightOf) t)
-       (do
-         go right
-         perform "moveRedLeft: rotateRight" rotateRight
-         go up
-         perform "moveRedLeft: rotateLeft" rotateLeft
-         perform "moveRedLeft: colorFlip and done" colorFlip)
+      fixDoubleRed (Node _ (Node Red (Node Red _ _ _) _ _) _ _) =
+          perform "fix double red: rotateRight" rotateRight
+      fixDoubleRed _ = return ()
+      
+      split4Node (Node _ (Node Red _ _ _) _ (Node Red _ _ _)) =
+          perform "fix 4-node: colorFlip" colorFlip
+      split4Node _ = return ()
+      
+  (t, _) <- get
+  throwOverRightLeaning t
+  (t1, _) <- get
+  fixDoubleRed t1
+  (t2, _) <- get
+  split4Node t2
 
-moveRedRight :: Transform a ()
-moveRedRight = do
-  perform "moveRedRight: colorFlip and done" colorFlip
+breakLeft2Node :: Transform a ()
+breakLeft2Node = do
+  let moveRedLeft = do
+                   (t, _) <- get
+                   case t of
+                     Node _ _ _ (Node _ (Node Red _ _ _) _ _) -> do
+                            perform "moveRedLeft: colorFlip" colorFlip
+                            go right
+                            perform "moveRedLeft: rotateRight" rotateRight
+                            go up
+                            perform "moveRedLeft: rotateLeft" rotateLeft
+                            perform "moveRedLeft: colorFlip and done" colorFlip
+                     _ -> perform "moveRedLeft: simple colorFlip" colorFlip
+
+  (t, _) <- get
+  case t of
+    Node _ (Node Black (Node Black _ _ _) _ _) _ _ ->
+        moveRedLeft
+    Node _ (Node Black Leaf _ _) _ _ ->
+        moveRedLeft
+    _ -> return ()
+
+breakRight2Node :: Transform a ()
+breakRight2Node = do
+  let moveRedRight = do
+                    (t, _) <- get
+                    case t of
+                      Node _ (Node _ (Node Red _ _ _) _ _) _ _ -> do
+                             perform "moveRedRight: colorFlip" colorFlip
+                             perform "moveredRight: rotateRight" rotateRight
+                             perform "moveredRight: colorFlip and done" colorFlip
+                      _ -> perform "moveRedRight: simple colorflip" colorFlip
+
+  (t, _) <- get
+  case t of
+    Node _ _ _ (Node Black (Node Black _ _ _) _ _) ->
+        moveRedRight
+    Node _ _ _ (Node Black Leaf _ _) ->
+        moveRedRight
+    _ -> return ()
+
+deleteMinNode :: Transform a ()
+deleteMinNode = do
   (t, cx) <- get
-  when ((isRed . leftOf . leftOf) t)
-       (do
-         perform "moveredRight: rotateRight" rotateRight
-         perform "moveredRight: colorFlip and done" colorFlip)
-  
+  case t of
+    Node _ Leaf _ _ -> perform "deleteMinNode: removeNode" removeNode
+    _ -> do
+
+      breakLeft2Node
+
+      go left
+      deleteMinNode
+      go up
+
+      fixUp
+
+delete :: Ord a => a -> Transform a Bool
+delete k = do
+  let throwRedOver (Node _ (Node Red _ _ _) _ _) =
+          perform "delete, throw red over: rotateRight" rotateRight
+      throwRedOver _ = return ()
+
+  (t, cx) <- get
+  r <- case t of
+    Leaf -> return False
+    Node _ _ x Leaf | k == x -> do
+             throwRedOver t
+             perform "delete: 2 removeNode" removeNode
+             return True
+    Node _ l x _ | k < x -> do
+             breakLeft2Node
+             go left
+             r <- delete k
+             go up
+             return r
+    Node _ _ x r | k == x -> do
+             throwRedOver t
+             breakRight2Node
+             perform "delete: 3 setKey" (setKey (minKey r))
+             go right
+             deleteMinNode
+             go up
+             return True
+    Node _ _ x r | k > x -> do
+             throwRedOver t
+             breakRight2Node
+             go right
+             r <- delete k
+             go up
+             return r
+
+  fixUp
+  return r
+
+{- wrapper for trees instead of subtreas, where black-root-invariant must hold -}
 
 deleteMin :: Transform a ()
 deleteMin = do
@@ -173,60 +260,6 @@ myDeleteMin = do
                 perform "myDeleteMin: makeRootRed" (\(Node _ l x r) -> Node Red l x r)
                 deleteMin
     _ -> deleteMin
-
-deleteMinNode :: Transform a ()
-deleteMinNode = do
-  (t, cx) <- get
-  case t of
-    Node _ Leaf _ _ -> perform "deleteMinNode: removeNode" removeNode
-    _ -> do
-
-      when ((isBlack . leftOf) t && (isBlack . leftOf . leftOf) t)
-           moveRedLeft
-
-      go left
-      deleteMinNode
-      go up
-
-      fixUp
-
-delete :: Ord a => a -> Transform a Bool
-delete k = do
-  (t, cx) <- get
-  r <- case t of
-    Leaf -> return False
-    Node _ l x _ | k < x -> do
-             when (isBlack l && isMaybeBlack (maybeLeftOf l))
-                  moveRedLeft
-             go left
-             r <- delete k
-             go up
-             return r
-    Node _ l x Leaf | k == x -> do
-             when (isRed l)
-                  (perform "delete: 2 rotateRight" rotateRight)
-             perform "delete: 2 removeNode" removeNode
-             return True
-    Node _ l x r | otherwise -> do
-             when (isRed l)
-                  (perform "delete: 3 rotateRight" rotateRight)
-             when (isBlack r && isMaybeBlack (maybeRightOf r))
-                  moveRedRight
-             if x == k
-               then do
-                 perform "delete: 3 setKey" (setKey (minKey r))
-                 go right
-                 deleteMinNode
-                 go up
-                 return True
-               else do
-                 go right
-                 r <- delete k
-                 go up
-                 return r
-
-  fixUp
-  return r
 
 myDelete :: Ord a => a -> Transform a Bool
 myDelete k = do
