@@ -195,7 +195,7 @@ deleteMinNode :: Transform a ()
 deleteMinNode = do
   (t, cx) <- get
   case t of
-    Node _ Leaf _ _ -> perform "deleteMinNode: removeNode" removeNode
+    Node Red Leaf _ Leaf -> perform "deleteMinNode: removeNode" removeNode
     _ -> do
 
       breakLeft2Node
@@ -329,7 +329,7 @@ run m t = runRWS m () (top t)
 
 main = do
   forM_ [1..7] (\arg -> do
-    let tree = test2
+    let tree = test1
     let (r, loc, trees) = run (myDelete arg) tree
   
     putStrLn ("digraph { \n"

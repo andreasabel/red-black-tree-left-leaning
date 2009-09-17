@@ -11,6 +11,8 @@
 import Relation.Binary
 open Relation.Binary hiding (_⇒_)
 
+open import Relation.Binary.PropositionalEquality hiding (trans)
+
 module LLRBTree (order : StrictTotalOrder) where
 
 open module sto = StrictTotalOrder order
@@ -25,6 +27,72 @@ import Data.Product
 open Data.Product hiding (swap)
 open import Data.Nat hiding (_≤_; _<_; _≟_; compare)
 open import Data.List
+
+data ℕ₂ : Set where
+  0# : ℕ₂
+  1# : ℕ₂
+
+-- Addition.
+
+infixl 6 _⊕_
+
+_⊕_ : ℕ₂ → ℕ → ℕ
+0# ⊕ n = n
+1# ⊕ n = 1 + n
+
+-- i ⊕ n -1 = pred (i ⊕ n).
+
+_⊕_-1 : ℕ₂ → ℕ → ℕ
+i ⊕ zero  -1 = 0
+i ⊕ suc n -1 = i ⊕ n
+
+infix 4 _∼_
+
+-- If m ∼ n, then the difference between m and n is at most 1. _∼_
+-- is used to record the balance factor of the AVL trees, and also
+-- to ensure that the absolute value of the balance factor is never
+-- more than 1.
+
+data _∼_ : ℕ → ℕ → Set where
+  ∼+ : ∀ {n} →     n ∼ 1 + n
+  ∼0 : ∀ {n} →     n ∼ n
+  ∼- : ∀ {n} → 1 + n ∼ n
+
+-- The maximum of m and n.
+
+max : ∀ {m n} → m ∼ n → ℕ
+max (∼+ {n}) = 1 + n
+max (∼0 {n}) =     n
+max (∼- {n}) = 1 + n
+
+-- Some lemmas.
+
+1+ : ∀ {m n} → m ∼ n → 1 + m ∼ 1 + n
+1+ ∼+ = ∼+
+1+ ∼0 = ∼0
+1+ ∼- = ∼-
+
+max∼ : ∀ {i j} (bal : i ∼ j) → max bal ∼ i
+max∼ ∼+ = ∼-
+max∼ ∼0 = ∼0
+max∼ ∼- = ∼0
+
+∼max : ∀ {i j} (bal : i ∼ j) → j ∼ max bal
+∼max ∼+ = ∼0
+∼max ∼0 = ∼0
+∼max ∼- = ∼+
+
+max∼max : ∀ {i j} (bal : i ∼ j) → max (max∼ bal) ∼ max (∼max bal)
+max∼max ∼+ = ∼0
+max∼max ∼0 = ∼0
+max∼max ∼- = ∼0
+
+max-lemma : ∀ {m n} (bal : m ∼ n) →
+            1 + max (1+ (max∼max bal)) ≡ 2 + max bal
+max-lemma ∼+ = refl
+max-lemma ∼0 = refl
+max-lemma ∼- = refl
+
 
 data Bound : Set where
   leftOf  : A → Bound
