@@ -141,7 +141,7 @@ data Tree′ (β : Bounds) : Color → ℕ → Set where
      → Tree′ β red n
   nb : ∀ {c n}(a : A) → a is β
      → Tree′ (leftOf a ∷ β) c n → Tree′ (rightOf a ∷ β) black n
-     → Tree′ β black (n + 1)
+     → Tree′ β black (suc n)
 
 infix 3 _◁_
 _◁_ : ∀ {β β′ c n} → Tree′ β c n → β ⇒ β′ → Tree′ β′ c n
@@ -182,7 +182,7 @@ data AlmostDel (β : Bounds) : Type → ℕ → Set where
 
 rotateLeft : ∀ {β n} → (b : A) → b is β
            → Tree′ (leftOf b ∷ β) black n → Tree′ (rightOf b ∷ β) red n
-           → Tree′ β black (n + 1)
+           → Tree′ β black (suc n)
 rotateLeft b pb l (nr c (b<c , pc) rl rr)
   = nb c pc 
       (nr b (b<c , pb) 
@@ -192,22 +192,22 @@ rotateLeft b pb l (nr c (b<c , pc) rl rr)
 
 colorFlip : ∀ {β n} (b : A) → b is β
           → Tree′ (leftOf b ∷ β) red n → Tree′ (rightOf b ∷ β) red n
-          → Tree′ β red (n + 1)
+          → Tree′ β red (suc n)
 colorFlip b pb l r = nr b pb (colorFlip′ l) (colorFlip′ r)
   where
-    colorFlip′ : ∀ {β n} → Tree′ β red n → Tree′ β black (n + 1)
+    colorFlip′ : ∀ {β n} → Tree′ β red n → Tree′ β black (suc n)
     colorFlip′ (nr a pa l r) = nb a pa l r
 
 rotateRightColorFlip : ∀ {β n} → (a : A) → a is β
   → Almost (leftOf a ∷ β) nrrˡ n → Tree′ (rightOf a ∷ β) black n
-  → Tree′ β red (n + 1)
+  → Tree′ β red (suc n)
 rotateRightColorFlip a pa (nrrˡ b (b<a , pb) (nr d (d<b , _ , pd) lll llr) lr) r
   = nr b pb (nb d (d<b , pd) (lll ◁ keep keep skip ∎) (llr ◁ keep keep skip ∎))
             (nb a (b<a , pa) (lr ◁ swap ∎) (r ◁ coverR b<a ∎))
 
 rotateLeftRotateRightColorFlip : ∀ {β n} → (a : A) → a is β
   → Almost (leftOf a ∷ β) nrrʳ n → Tree′ (rightOf a ∷ β) black n
-  → Tree′ β red (n + 1)
+  → Tree′ β red (suc n)
 rotateLeftRotateRightColorFlip a pa l r with rotateLeft′ l
   where
     rotateLeft′ : ∀ {β n} → Almost β nrrʳ n → Almost β nrrˡ n
@@ -222,19 +222,16 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft′ l
 ------------------------------------------------------------------------
 -- delete left-most entry
 
--- deleteMinB : Tree β black (n + 1) → Tree ? black (n + 1)
--- deleteMinB (nb a pa l r)
+ifRed : ∀ {A} → Color → A → A → A
+ifRed red   a b = a
+ifRed black a b = b 
 
-deleteMin : Tree′ β black (n + 1) -> ∃₂ λ β' n' -> Tree′ β' black n'
-deleteMin lf = lf
-deleteMin (nb a pa lf lf) = lf
-deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
-... | β' , _ , t' = nb a pa t' t3   
-deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
-... | β' , black , t' = , , t'
-... | β' , red , t' = , , makeBlack t'
+makeBlack : ∀ {c β n} → Tree′ β c n → Tree′ β black (ifRed c (suc n) n)
+makeBlack {black} t = t
+makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
 
-deleteMinR : Tree′ β red n -> ∃₂ λ β' c' → Tree′ β' c' n
+
+deleteMinR : ∀ {n β} → Tree′ β red n -> ∃₂ λ β' c' → Tree′ β' c' n
 
 {-
    (a)       -->  .
@@ -249,22 +246,22 @@ deleteMinR (nr a pa lf lf) = , , lf
  -}
 deleteMinR (nr c pc (nb b pb (nr a pa t1 t2) t3) t4) 
   with deleteMinR (nr a pa t1 t2) 
-... | β' , c' , ta' = , , (nr c pc (nb b pb ta' t3) t4)
+... | β' , c' , ta' = , , (nr c pc (nb b pb ? t3) t4)
  
 {-
      (b)            (c)
   [a]   [d]  -->  [b] [d]
       (c)
  -}
-deleteMinR (nr b pb (nb a pa lf lf) (nb d pd (nr c pc lf lf) lf) =
-   , , nr c {|pc|} (nb b {|pb|} lf lf) (nb d ? lf lf)
+deleteMinR (nr b pb (nb a pa lf lf) (nb d pd (nr c pc lf lf) lf)) =
+   , , (nr c ? (nb b ? lf lf) (nb d ? lf lf))
 
 {-
      (b)             [d]
   [a]   [d]  -->  (b)
  -}
-deleteMinR (nr b pb (nb a pa lf lr) (nb d pd lf lf) =
-   , , nb d {|pd|} (nr b ? lf lf) lf
+deleteMinR (nr b pb (nb a pa lf lf) (nb d pd lf lf)) =
+   , , nb d ? (nr b ? lf lf) lf
 
 {-
       (b)                (c)
@@ -272,8 +269,8 @@ deleteMinR (nr b pb (nb a pa lf lr) (nb d pd lf lf) =
         (c)        (a)
  t1 t2 t3 t4 t5   t1 t2 t3 t4 t5     Note: t1 is black
 -}
-deleteMinR (nr b pb (nb a pa t1 t2) (nb d pd (nr c pc t3 t4) t5)) 
-  with deleteMinR (nr a pa t1 t2) 
+deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d pd (nr c pc t3 t4) t5)) 
+  with deleteMinR (nr a pa (nb x1 px1 t1l t1r) t2) 
 ... | β' , c' , ta' = , , nr c ? (nb b ? ta' t3) (nb d ? t4 t5)
 
 {-
@@ -301,6 +298,17 @@ deleteMinR (nr b pb (nb a pa t1 t2) (nb d pd t3 t4))
 ... | β' , black , t1' = (nb d pd (nr b pb t1' t3) t4)
 
 
+-- top level function, not really useful, I suppose
+deleteMin : ∀ {β n} → Tree′ β black (suc n) -> ∃₂ λ β' n' -> Tree′ β' black n'
+deleteMin lf = lf
+deleteMin (nb a pa lf lf) = lf
+deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
+... | β' , _ , t' = nb a pa t' t3   
+deleteMin (nb a pa (nb b pb t1 t2) t3) 
+  with deleteMinR (nr a pa (nb b pb t1 t2) t3) 
+... | β' , _ , t' = makeBlack t'
+deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
+... | β' , c' , t' = , , makeBlack t'
 
 
 ------------------------------------------------------------------------
