@@ -174,12 +174,11 @@ data Almost (β : Bounds) : Type → ℕ → Set where
 
 data TypeDel : Set where
   dok    : TypeDel
-  dnbbr  : TypeDel   -- right leaning 3 node
   dnbrr  : TypeDel   -- 4 node
 
 data AlmostDel (β : Bounds) : Type → ℕ → Set where
   ok   : ∀ {c n} → Tree′ β c n → AlmostDel β ok n
-  
+--  nbrr 
 
 rotateLeft : ∀ {β n} → (b : A) → b is β
            → Tree′ (leftOf b ∷ β) black n → Tree′ (rightOf b ∷ β) red n
@@ -219,6 +218,84 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft′ l
             (rl ◁ swap ∎)) 
           (rr ◁ keep skip ∎)
 ... | l′ = rotateRightColorFlip a pa l′ r
+
+------------------------------------------------------------------------
+-- delete left-most entry
+
+-- deleteMinB : Tree β black (n + 1) → Tree ? black (n + 1)
+-- deleteMinB (nb a pa l r)
+
+deleteMin : Tree′ β black n -> Tree′ ? black n
+deleteMin 
+
+deleteMinR : Tree′ β red n -> ∃₂ λ β' c' → Tree′ β' c' n
+
+{-
+   (a)       -->  .
+ -}
+deleteMinR (nr a pa lf lf) = , , lf
+
+{-
+         (c)
+      [b]  t4    jump to (a)
+   (a)
+  t1 t2 t3
+ -}
+deleteMinR (nr c pc (nb b pb (nr a pa t1 t2) t3) t4) 
+  with deleteMinR (nr a pa t1 t2) 
+... | β' , c' , ta' = , , (nr c pc (nb b pb ta' t3) t4)
+ 
+{-
+     (b)            (c)
+  [a]   [d]  -->  [b] [d]
+      (c)
+ -}
+deleteMinR (nr b pb (nb a pa lf lf) (nb d pd (nr c pc lf lf) lf) =
+   , , nr c {|pc|} (nb b {|pb|} lf lf) (nb d ? lf lf)
+
+{-
+     (b)             [d]
+  [a]   [d]  -->  (b)
+ -}
+deleteMinR (nr b pb (nb a pa lf lr) (nb d pd lf lf) =
+   , , nb d {|pd|} (nr b ? lf lf) lf
+
+{-
+      (b)                (c)
+  [a]     [d]  -->    [b]   [d]
+        (c)        (a)
+ t1 t2 t3 t4 t5   t1 t2 t3 t4 t5     Note: t1 is black
+-}
+deleteMinR (nr b pb (nb a pa t1 t2) (nb d pd (nr c pc t3 t4) t5)) 
+  with deleteMinR (nr a pa t1 t2) 
+... | β' , c' , ta' = , , nr c ? (nb b ? ta' t3) (nb d ? t4 t5)
+
+{-
+      (b)               [b]
+  [a]    [d]  -->    (a)   (d)
+ t1 t2  t3 t4      t1 t2  t3 t4      Note: t1,t3 are black
+
+case 1:  deleteMinR a  returns black t1' (not a leaf!) : left rotate
+
+    [b]              [d]    
+  t1'   (d)  -->  (b)
+       t3 t4    t1' t3  t4
+
+case 2:  deleteMinR a  returns red a':   color flip
+
+       [b]                (b)
+    (a')    (d)   --> [a']    [d]
+  t1' t2'  t3 t4     t1' t2' t3 t4
+
+-}
+deleteMinR (nr b pb (nb a pa t1 t2) (nb d pd t3 t4)) 
+  with deleteMinR (nr a pa t1 t2) 
+... | β' , .red   , (nr a' pa' t1' t2') = 
+      nr b pb (nb a' pa' t1' t2') (nb d pd t3 t4)
+... | β' , black , t1' = (nb d pd (nr b pb t1' t3) t4)
+
+
+
 
 ------------------------------------------------------------------------
 

@@ -281,7 +281,7 @@ next = do
 dotgraph :: Show a => (String, Tree a) -> String
 dotgraph (d,t) =
     "digraph { \n"
-    ++ "graph [label=\"" ++ d ++ "\"];\n"
+    ++ "graph [size=\"8,12!\", label=\"" ++ d ++ "\"];\n"
     ++ (snd $ evalState (dot t) 0) ++ "\n"
     ++ "}\n"
 
@@ -319,6 +319,22 @@ test1 = Node Black
 test2 = black (black (black Leaf 1 Leaf) 2 (black Leaf 3 Leaf)) 4
         (black (black Leaf 5 Leaf) 6 (black Leaf 7 Leaf))
 
+black' x l r = black l x r
+red' x l r = red l x r
+leaf' x = Leaf
+
+test3g black red leaf 
+  = black 10
+          (red 6 
+            (black 4 
+              (red 2 (leaf 1) (leaf 3))
+              (leaf 5))
+            (black 8 (leaf 7) (leaf 9)))
+          (black 14 (red 12 (leaf 11) (leaf 13)) (leaf 15))
+
+test3 = test3g black' red' leaf'
+test4 = test3g black' red' (\ x -> black' x Leaf Leaf)
+
 foo = runRWS (do
                go left
                perform "foo colorFlip" colorFlip
@@ -328,8 +344,8 @@ run :: Transform a r -> Tree a -> (r, Loc a, [(String, Tree a)])
 run m t = runRWS m () (top t)
 
 main = do
-  forM_ [1..7] (\arg -> do
-    let tree = test1
+  forM_ [8 {- 1..7 -}] (\arg -> do
+    let tree = test4 -- test1
     let (r, loc, trees) = run (myDelete arg) tree
   
     putStrLn ("digraph { \n"
