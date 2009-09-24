@@ -225,8 +225,14 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft′ l
 -- deleteMinB : Tree β black (n + 1) → Tree ? black (n + 1)
 -- deleteMinB (nb a pa l r)
 
-deleteMin : Tree′ β black n -> Tree′ ? black n
-deleteMin 
+deleteMin : Tree′ β black (n + 1) -> ∃₂ λ β' n' -> Tree′ β' black n'
+deleteMin lf = lf
+deleteMin (nb a pa lf lf) = lf
+deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
+... | β' , _ , t' = nb a pa t' t3   
+deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
+... | β' , black , t' = , , t'
+... | β' , red , t' = , , makeBlack t'
 
 deleteMinR : Tree′ β red n -> ∃₂ λ β' c' → Tree′ β' c' n
 
