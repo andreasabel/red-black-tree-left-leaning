@@ -115,10 +115,14 @@ data _⇒_ : Bounds → Bounds → Set where
   keep_  : ∀ {β β′ b} → β ⇒ β′ → b ∷ β ⇒ b ∷ β′
   skip_  : ∀ {β β′ b} → β ⇒ β′ → b ∷ β ⇒ β′
   swap_  : ∀ {β β′ b b′} → b ∷ b′ ∷ β ⇒ β′ → b′ ∷ b ∷ β ⇒ β′
+-- ?0 : (leftOf b ∷ .β) ⇒ (leftOf b ∷ leftOf c ∷ .β)
   coverL : ∀ {β β′ x y} → x < y → leftOf  x ∷ leftOf  y ∷ β ⇒ β′
          → leftOf  x ∷ β ⇒ β′
   coverR : ∀ {β β′ x y} → x < y → rightOf y ∷ rightOf x ∷ β ⇒ β′
          → rightOf y ∷ β ⇒ β′
+-- ?0 : (rightOf d ∷ rightOf b ∷ .β) ⇒ (rightOf d ∷ rightOf c ∷ .β)
+  throwR : ∀ {β β'  x y z} → y < x → z < x → rightOf x ∷ rightOf z ∷ β ⇒ β'
+         → rightOf x ∷ rightOf y ∷ β ⇒ β'
 
 ⟦_⟧ : ∀ {β β′} → β ⇒ β′ → (x : A) → x is β → x is β′
 ⟦ ∎          ⟧ z p              = p
@@ -127,6 +131,7 @@ data _⇒_ : Bounds → Bounds → Set where
 ⟦ swap h     ⟧ z (p₁ , p₂ , p)  = ⟦ h ⟧ z (p₂ , p₁ , p)
 ⟦ coverL q h ⟧ z (p₁ , p)       = ⟦ h ⟧ z (p₁ , trans p₁ q , p)
 ⟦ coverR q h ⟧ z (p₁ , p)       = ⟦ h ⟧ z (p₁ , trans q p₁ , p)
+⟦ throwR q₁ q₂ h ⟧ z (p₁ , p₂ , p)       = ⟦ h ⟧ z (p₁ , trans q₂ p₁ , p)
 
 ------------------------------------------------------------------------
 
@@ -231,12 +236,12 @@ makeBlack {black} t = t
 makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
 
 
-deleteMinR : ∀ {n β} → Tree′ β red n -> ∃₂ λ β' c' → Tree′ β' c' n
+deleteMinR : ∀ {n β} → Tree′ β red n -> ∃ λ c' → Tree′ β c' n
 
 {-
    (a)       -->  .
  -}
-deleteMinR (nr a pa lf lf) = , , lf
+deleteMinR (nr a pa lf lf) = , lf
 
 {-
          (c)
@@ -246,22 +251,22 @@ deleteMinR (nr a pa lf lf) = , , lf
  -}
 deleteMinR (nr c pc (nb b pb (nr a pa t1 t2) t3) t4) 
   with deleteMinR (nr a pa t1 t2) 
-... | β' , c' , ta' = , , (nr c pc (nb b pb ? t3) t4)
+... | c' , ta' = , (nr c pc (nb b pb ta' t3) t4)
  
 {-
      (b)            (c)
   [a]   [d]  -->  [b] [d]
       (c)
  -}
-deleteMinR (nr b pb (nb a pa lf lf) (nb d pd (nr c pc lf lf) lf)) =
-   , , (nr c ? (nb b ? lf lf) (nb d ? lf lf))
+deleteMinR (nr b pb (nb a pa lf lf) (nb d (b<d , pd) (nr c (c<d , b<c , pc) lf lf) lf)) =
+   , (nr c pc (nb b (b<c , pb) lf lf) (nb d (c<d , pd) lf lf))
 
 {-
      (b)             [d]
   [a]   [d]  -->  (b)
  -}
-deleteMinR (nr b pb (nb a pa lf lf) (nb d pd lf lf)) =
-   , , nb d ? (nr b ? lf lf) lf
+deleteMinR (nr b pb (nb a pa lf lf) (nb d (b<d , pd) lf lf)) =
+   , nb d pd (nr b (b<d , pb) lf lf) lf
 
 {-
       (b)                (c)
@@ -269,9 +274,13 @@ deleteMinR (nr b pb (nb a pa lf lf) (nb d pd lf lf)) =
         (c)        (a)
  t1 t2 t3 t4 t5   t1 t2 t3 t4 t5     Note: t1 is black
 -}
-deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d pd (nr c pc t3 t4) t5)) 
+deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2)
+                    (nb d (b<d , pd) (nr c (c<d , b<c , pc) t3 t4) t5)) 
   with deleteMinR (nr a pa (nb x1 px1 t1l t1r) t2) 
-... | β' , c' , ta' = , , nr c ? (nb b ? ta' t3) (nb d ? t4 t5)
+... | c' , ta' = ,
+  nr c pc
+    (nb b (b<c , pb) (ta' ◁ coverL b<c ∎) (t3 ◁ swap skip swap ∎))
+    (nb d (c<d , pd) (t4 ◁ swap keep keep skip ∎) (t5 ◁ throwR b<d c<d ∎))
 
 {-
       (b)               [b]
@@ -291,24 +300,31 @@ case 2:  deleteMinR a  returns red a':   color flip
   t1' t2'  t3 t4     t1' t2' t3 t4
 
 -}
-deleteMinR (nr b pb (nb a pa t1 t2) (nb d pd t3 t4)) 
-  with deleteMinR (nr a pa t1 t2) 
-... | β' , .red   , (nr a' pa' t1' t2') = 
-      nr b pb (nb a' pa' t1' t2') (nb d pd t3 t4)
-... | β' , black , t1' = (nb d pd (nr b pb t1' t3) t4)
+deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)) 
+  with deleteMinR (nr a pa (nb x1 px1 t1l t1r) t2) 
+... | black , (nb x1' (x1'<b , px1') t1l' t1r') = ,
+  nb d pd
+    (nr b (b<d , pb)
+      (nb x1' (x1'<b , trans x1'<b b<d , px1')
+        (t1l' ◁ keep coverL b<d ∎)
+        (t1r' ◁ keep coverL b<d ∎))
+      (nb x3 (b<x3 , x3<d , px3) (t3l ◁ keep swap ∎) (t3r ◁ keep swap ∎)))
+    (t4 ◁ keep skip ∎)
+... | red   , (nr a' pa' t1' t2') = 
+      , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
 
 
 -- top level function, not really useful, I suppose
-deleteMin : ∀ {β n} → Tree′ β black (suc n) -> ∃₂ λ β' n' -> Tree′ β' black n'
-deleteMin lf = lf
-deleteMin (nb a pa lf lf) = lf
-deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
-... | β' , _ , t' = nb a pa t' t3   
-deleteMin (nb a pa (nb b pb t1 t2) t3) 
-  with deleteMinR (nr a pa (nb b pb t1 t2) t3) 
-... | β' , _ , t' = makeBlack t'
-deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
-... | β' , c' , t' = , , makeBlack t'
+-- deleteMin : ∀ {β n} → Tree′ β black (suc n) -> ∃₂ λ β' n' -> Tree′ β' black n'
+-- deleteMin lf = lf
+-- deleteMin (nb a pa lf lf) = lf
+-- deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
+-- ... | β' , _ , t' = nb a pa t' t3   
+-- deleteMin (nb a pa (nb b pb t1 t2) t3) 
+--   with deleteMinR (nr a pa (nb b pb t1 t2) t3) 
+-- ... | β' , _ , t' = makeBlack t'
+-- deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
+-- ... | β' , c' , t' = , , makeBlack t'
 
 
 ------------------------------------------------------------------------
