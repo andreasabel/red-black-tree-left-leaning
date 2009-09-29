@@ -121,8 +121,12 @@ data _⇒_ : Bounds → Bounds → Set where
   coverR : ∀ {β β′ x y} → x < y → rightOf y ∷ rightOf x ∷ β ⇒ β′
          → rightOf y ∷ β ⇒ β′
 -- ?0 : (rightOf d ∷ rightOf b ∷ .β) ⇒ (rightOf d ∷ rightOf c ∷ .β)
-  throwR : ∀ {β β'  x y z} → y < x → z < x → rightOf x ∷ rightOf z ∷ β ⇒ β'
+
+{-
+throwR' : ∀ {β β'  x y z} → z < x → rightOf x ∷ rightOf z ∷ β ⇒ β'
          → rightOf x ∷ rightOf y ∷ β ⇒ β'
+throwR' z<x p = swap skip coverR z<x p
+-}
 
 ⟦_⟧ : ∀ {β β′} → β ⇒ β′ → (x : A) → x is β → x is β′
 ⟦ ∎          ⟧ z p              = p
@@ -131,7 +135,6 @@ data _⇒_ : Bounds → Bounds → Set where
 ⟦ swap h     ⟧ z (p₁ , p₂ , p)  = ⟦ h ⟧ z (p₂ , p₁ , p)
 ⟦ coverL q h ⟧ z (p₁ , p)       = ⟦ h ⟧ z (p₁ , trans p₁ q , p)
 ⟦ coverR q h ⟧ z (p₁ , p)       = ⟦ h ⟧ z (p₁ , trans q p₁ , p)
-⟦ throwR q₁ q₂ h ⟧ z (p₁ , p₂ , p)       = ⟦ h ⟧ z (p₁ , trans q₂ p₁ , p)
 
 ------------------------------------------------------------------------
 
@@ -280,7 +283,7 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2)
 ... | c' , ta' = ,
   nr c pc
     (nb b (b<c , pb) (ta' ◁ coverL b<c ∎) (t3 ◁ swap skip swap ∎))
-    (nb d (c<d , pd) (t4 ◁ swap keep keep skip ∎) (t5 ◁ throwR b<d c<d ∎))
+    (nb d (c<d , pd) (t4 ◁ swap keep keep skip ∎) (t5 ◁ swap skip coverR c<d ∎))
 
 {-
       (b)               [b]
