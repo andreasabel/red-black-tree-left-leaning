@@ -12,6 +12,7 @@ import Relation.Binary
 open Relation.Binary hiding (_⇒_)
 
 open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Relation.Nullary
 
 module LLRBTree (order : StrictTotalOrder) where
 
@@ -20,7 +21,7 @@ open module sto = StrictTotalOrder order
 A : Set
 A = StrictTotalOrder.carrier order
   
-open import Data.Unit
+open import Data.Unit hiding (_≟_)
 open import Data.Empty
 open import Data.Sum
 import Data.Product
@@ -263,6 +264,43 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3
 -- deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
 -- ... | β' , c' , t' = , , makeBlack t'
 
+
+minKey : ∀ {n β c} → Tree' β c (suc n) → A
+minKey .{0} (nb a _ lf lf) = a
+minKey .{0} (nb _ _ (nr a _ lf lf) _) = a
+minKey .{0} (nr _ _ (nb a _ lf lf) _ ) = a
+minKey .{0} (nr _ _ (nb _ _ (nr a _ lf lf) _) _) = a
+minKey {suc n} (nb _ _ l r) = minKey l
+minKey {suc n} (nr _ _ l r) = minKey l
+
+
+
+foo : ∀ {n β c} → (t : Tree' β c (suc n)) → (minKey t) is β
+foo = {!!}
+
+mutual
+  deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
+
+  deleteR .{0} k (nr a pa lf lf) with k ≟ a
+  ... | yes _ = , lf
+  ... | no  _ = , nr a pa lf lf
+
+  deleteR .{1} k (nr b pb (nb a (a<b , pa) lf lf) (nb c (b<c , pc) lf lf)) with k ≟ a
+  ... | yes _ = , nb c pc (nr b (b<c , pb) lf lf) lf
+  ... | no  _ with k ≟ b
+  ... | yes _ = , nb c pc (nr a (trans a<b b<c , pa) lf lf) lf
+  ... | no  _ with k ≟ c
+  ... | yes _ = , nb b pb (nr a (a<b , pa) lf lf) lf
+  ... | no  _ = , nr b pb (nb a (a<b , pa) lf lf) (nb c (b<c , pc) lf lf)
+
+  deleteR {suc n} k (nr a pa l r) with k ≟ a
+  ... | yes _ with deleteMinR (nr a pa l r)
+  ... | .red   , nr a' pa' l' r' = , nr (minKey r) (proj₂ (foo r)) {!!} {!!}
+  ... | .black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) {!!} {!!}
+  deleteR {suc n} k (nr a pa l r) | no  _ = deleteCrawl k (nr a pa l r)
+
+  deleteCrawl : ∀ {n β} → A → Tree' β red (suc n) → ∃ λ c' → Tree' β c' (suc n)
+  deleteCrawl = {!!}
 
 ------------------------------------------------------------------------
 
