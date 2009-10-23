@@ -300,7 +300,34 @@ mutual
   deleteR {suc n} k (nr a pa l r) | no  _ = deleteCrawl k (nr a pa l r)
 
   deleteCrawl : ∀ {n β} → A → Tree' β red (suc n) → ∃ λ c' → Tree' β c' (suc n)
-  deleteCrawl = {!!}
+
+  -- 2.4
+  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                        (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare k d
+  -- 2.4.1
+  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                        (nb f pf (nb e pe el er) (nb g pg gl gr)))
+    | tri< k<d _ _ with deleteR k (nr b {!!} (nb a pa al ar) (nb c pc cl cr))
+  ... | .red   , (nr r pr rˡ rʳ) = , nr d ? (nb r pr rˡ rʳ) (nb f pf (nb e pe el er) (nb g pg gl gr))
+  ... | .black , (nb r pr rˡ rʳ) = , nb f ?
+                                        (nr d ?
+                                          (nb r pr rˡ rʳ)
+                                          (nb e pe el er ◁ ?)
+                                        ◁ ?)
+                                        (nb g pg gl gr ◁ ?)
+  -- 2.4.2
+  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                        (nb f pf (nb e pe el er) (nb g pg gl gr)))
+    | tri≈ _ k≈d _ with deleteR k (nr d {!!} (nb c pc cl cr ◁ ?) (nb e pe el er ◁ ?))
+  ... | .red , _ = ?
+  ... | .black , _ = ?
+  -- 2.4.3
+  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                        (nb f pf (nb e pe el er) (nb g pg gl gr)))
+    | tri> _ _ k>d with deleteR k (nr f {!!} (nb e pe el er) (nb g pg gl gr))
+  ... | .red , _ = ?
+  ... | .black , _ = ?
+
 
 ------------------------------------------------------------------------
 
