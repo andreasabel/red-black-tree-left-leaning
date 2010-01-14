@@ -293,40 +293,106 @@ mutual
   ... | yes _ = , nb b pb (nr a (a<b , pa) lf lf) lf
   ... | no  _ = , nr b pb (nb a (a<b , pa) lf lf) (nb c (b<c , pc) lf lf)
 
-  deleteR {suc n} k (nr a pa l r) with k ≟ a
+  deleteR .{1} k (nr b pb (nb a (a<b , pa) lf lf) (nb c (b<c , pc) (nr _ _ lf lf) lf)) = {!!}
+  deleteR .{1} k (nr b pb (nb a (a<b , pa) (nr _ _ lf lf) lf) (nb c (b<c , pc) lf lf)) = {!!}
+  deleteR .{1} k (nr b pb (nb a (a<b , pa) (nr _ _ lf lf) lf) (nb c (b<c , pc) (nr _ _ lf lf) lf)) = {!!}
+
+  deleteR {suc (suc n)} k (nr a pa l r) with k ≟ a
   ... | yes _ with deleteMinR (nr a pa l r)
   ... | .red   , nr a' pa' l' r' = , nr (minKey r) (proj₂ (foo r)) {!!} {!!}
   ... | .black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) {!!} {!!}
-  deleteR {suc n} k (nr a pa l r) | no  _ = deleteCrawl k (nr a pa l r)
+  deleteR {suc (suc n)} k (nr a pa l r) | no  _ = deleteCrawl k (nr a pa l r)
 
-  deleteCrawl : ∀ {n β} → A → Tree' β red (suc n) → ∃ λ c' → Tree' β c' (suc n)
+  deleteCrawl : ∀ {n β} → A → Tree' β red (2 + n) → ∃ λ c' → Tree' β c' (2 + n)
 
   -- 2.4
-  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
-                        (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare k d
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                        (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare x d
   -- 2.4.1
-  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
                         (nb f pf (nb e pe el er) (nb g pg gl gr)))
-    | tri< k<d _ _ with deleteR k (nr b {!!} (nb a pa al ar) (nb c pc cl cr))
-  ... | .red   , (nr r pr rˡ rʳ) = , nr d ? (nb r pr rˡ rʳ) (nb f pf (nb e pe el er) (nb g pg gl gr))
-  ... | .black , (nb r pr rˡ rʳ) = , nb f ?
-                                        (nr d ?
+    | tri< x<d _ _ with deleteR x (nr b {!!} (nb a pa al ar) (nb c pc cl cr))
+  ... | .red   , (nr r pr rˡ rʳ) = , nr d {!!} (nb r pr rˡ rʳ) (nb f pf (nb e pe el er) (nb g pg gl gr))
+  ... | .black , (nb r pr rˡ rʳ) = , nb f {!!}
+                                        (nr d {!!}
                                           (nb r pr rˡ rʳ)
-                                          (nb e pe el er ◁ ?)
-                                        ◁ ?)
-                                        (nb g pg gl gr ◁ ?)
+                                          (nb e pe el er ◁ {!!})
+                                        ◁ {!!})
+                                        (nb g pg gl gr ◁ {!!})
   -- 2.4.2
-  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
                         (nb f pf (nb e pe el er) (nb g pg gl gr)))
-    | tri≈ _ k≈d _ with deleteR k (nr d {!!} (nb c pc cl cr ◁ ?) (nb e pe el er ◁ ?))
-  ... | .red , _ = ?
-  ... | .black , _ = ?
+    | tri≈ _ x≈d _ with deleteR x (nr d {!!} (nb c pc cl cr ◁ {!!}) (nb e pe el er ◁ {!!}))
+  ... | .red   , (nr r pr rˡ rʳ) = {!!}
+  ... | .black , (nb r pr rˡ rʳ) = {!!}
   -- 2.4.3
-  deleteCrawl k (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
                         (nb f pf (nb e pe el er) (nb g pg gl gr)))
-    | tri> _ _ k>d with deleteR k (nr f {!!} (nb e pe el er) (nb g pg gl gr))
-  ... | .red , _ = ?
-  ... | .black , _ = ?
+    | tri> _ _ x>d with deleteR x (nr f {!!} (nb e pe el er) (nb g pg gl gr))
+  ... | .red   , (nr r pr rˡ rʳ)  = {!!}
+  ... | .black , (nb r pr rˡ rʳ) = {!!}
+
+  -- 2.3
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k)) with compare x d
+
+  -- 2.3.1
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri< x<d _ _ with deleteR x (nr b {!!} a c)
+  ... | _ , r = , nr f {!!} (nb d {!!} r e) (nb j {!!} (nr h {!!} g i) k)
+
+  -- 2.3.2a
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri≈ _ x≈d _ with deleteR x (nr d {!!} (c ◁ skip ∎) e)
+  ... | red    , nr r pr rˡ rʳ = , nr f {!!} (nb r {!!} (nr b {!!} a (rˡ ◁ {!!} ∎) ◁ {!!} ∎) rʳ)
+                                         (nb j {!!} (nr h {!!} g i) k)
+  ... | black  , r             = , nr f {!!} (nb b {!!} a (r ◁ {!!} ∎) ◁ skip ∎)
+                                         (nb j {!!} (nr h {!!} g i) k)
+
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d with compare x f
+
+  -- 2.3.2b
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d {!!} (c ◁ skip ∎) e)
+  ... | red    , nr r pr rˡ rʳ = , nr f {!!} (nb r {!!} (nr b {!!} a (rˡ ◁ {!!} ∎) ◁ {!!} ∎) rʳ)
+                                         (nb j {!!} (nr h {!!} g i) k)
+  ... | black  , r             = , nr f {!!} (nb b {!!} a (r ◁ {!!} ∎) ◁ skip ∎)
+                                         (nb j {!!} (nr h {!!} g i) k)
+
+  -- 2.3.3
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f {!!} (e ◁ skip ∎) (g ◁ skip skip ∎))
+  ... | red   , nr r pr rˡ rʳ = , nr r {!!} (nb d {!!} (nr b {!!} a c) (rˡ ◁ {!!} ∎) ◁ {!!} ∎) (nb j {!!} (nr h {!!} g i  ◁ {!!} ∎) k  ◁ {!!} ∎)
+  ... | black , r             = , (nr d {!!} (nb b {!!} a c) (nb j {!!} (nr h {!!} (r ◁ {!!} ∎) i) k ◁ {!!} ∎) ◁ {!!} ∎)
+
+
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri> _ _ x>f with compare x j
+
+  -- 2.3.4
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri< x<j _ _ with deleteR x (nr b {!!} a c)
+  ... | _ , r = , nr f {!!} (nb d {!!} r e) (nb j {!!} (nr h {!!} g i) k)
+
+  -- 2.3.5a
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri≈ _ x≈j _ with deleteR x (nr j {!!} (i ◁ skip ∎) k)
+  ... | red   , nr r pr rˡ rʳ = , (nr f {!!} (nb d {!!} (nr b {!!} a c) e) (nb r {!!} (nr h {!!} g (rˡ ◁ {!!} ∎) ◁ {!!} ∎) rʳ))
+  ... | black , r             = , (nr f {!!} (nb d {!!} (nr b {!!} a c) e) (nb h {!!} g (r ◁ {!!} ∎)  ◁ {!!} ∎))
+
+  -- 2.3.5b
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri> _ _ x>j with deleteR x (nr j {!!} (i ◁ skip ∎) k)
+  ... | red   , nr r pr rˡ rʳ = , (nr f {!!} (nb d {!!} (nr b {!!} a c) e) (nb r {!!} (nr h {!!} g (rˡ ◁ {!!} ∎) ◁ {!!} ∎) rʳ))
+  ... | black , r             = , (nr f {!!} (nb d {!!} (nr b {!!} a c) e) (nb h {!!} g (r ◁ {!!} ∎)  ◁ {!!} ∎))
+
+  -- 2.2
+  deleteCrawl x (nr d _ (nb b _ a c) (nb h _ (nr f _ e g) i)) = {!!}
+
+  -- 2.1
+  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb h _ g i)) = {!!}
+
+
 
 
 ------------------------------------------------------------------------
