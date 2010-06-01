@@ -1,3 +1,5 @@
+{-# OPTIONS --no-coverage-check #-}
+
 {-
 
   Left Leaning Red Black Trees
@@ -92,6 +94,8 @@ lf          ◁ φ = lf
 nr x px l r ◁ φ = nr x (⟦ φ ⟧ x px) (l ◁ keep φ) (r ◁ keep φ)
 nb x px l r ◁ φ = nb x (⟦ φ ⟧ x px) (l ◁ keep φ) (r ◁ keep φ)
   
+{- BEGIN INSERT
+
 data ColorOf : ∀ {β n} → (c : Color) → Tree' β c n → Set where
   red   : ∀ {β n} → (t : Tree' β red   n) → ColorOf red   t
   black : ∀ {β n} → (t : Tree' β black n) → ColorOf black t
@@ -162,6 +166,9 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft' l
           (rr ◁ keep skip ∎)
 ... | l' = rotateRightColorFlip a pa l' r
 
+-} -- END INSERT
+
+
 ------------------------------------------------------------------------
 -- delete left-most entry
 
@@ -180,6 +187,8 @@ deleteMinR : ∀ {n β} → Tree' β red n -> ∃ λ c' → Tree' β c' n
    (a)       -->  .
  -}
 deleteMinR (nr a pa lf lf) = , lf
+
+{- BEGIN
 
 {-
          (c)
@@ -251,6 +260,8 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3
 ... | red   , (nr a' pa' t1' t2') = 
       , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
 
+-} -- END
+
 
 -- top level function, not really useful, I suppose
 -- deleteMin : ∀ {β n} → Tree' β black (suc n) -> ∃₂ λ β' n' -> Tree' β' black n'
@@ -284,6 +295,8 @@ mutual
   deleteR .{0} x (nr a pa lf lf) with x ≟ a
   ... | yes _ = , lf
   ... | no  _ = , nr a pa lf lf
+
+
 
   deleteR .{1} x (nr b pb (nb a (a<b , pa) lf lf) (nb c (b<c , pc) lf lf)) with x ≟ a
   ... | yes _ = , nb c pc (nr b (b<c , pb) lf lf) lf
@@ -326,28 +339,36 @@ mutual
   ... | black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
   deleteR {suc (suc n)} x (nr a pa l r) | no  _ = deleteCrawl x (nr a pa l r)
 
+
+
+
+
   deleteCrawl : ∀ {n β} → A → Tree' β red (2 + n) → ∃ λ c' → Tree' β c' (2 + n)
 
   -- 2.4
-  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
-                        (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare x d
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                         (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare x d
   -- 2.4.1
-  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
-                        (nb f pf (nb e pe el er) (nb g pg gl gr)))
-    | tri< x<d _ _ with deleteR x (nr b {!!} (nb a pa al ar) (nb c pc cl cr))
-  ... | red   , (nr r pr rˡ rʳ) = , nr d {!!} (nb r pr rˡ rʳ) (nb f pf (nb e pe el er) (nb g pg gl gr))
-  ... | black , (nb r pr rˡ rʳ) = , nb f {!!}
-                                        (nr d {!!}
-                                          (nb r pr rˡ rʳ)
-                                          (nb e pe el er ◁ {!!})
-                                        ◁ {!!})
-                                        (nb g pg gl gr ◁ {!!})
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
+                         (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
+    | tri< x<d ̸x≈d ̸x>d with deleteR x (nr b pb {- by agsy -} (nb a pa al ar) (nb c pc cl cr))
+  ... | red   , (nr r pr rˡ rʳ) = , nr d pd {- by agsy -} (nb r pr rˡ rʳ) (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr))
+  ... | black , (nb r pr rˡ rʳ) = , (nb f pf
+                                        (nr d (d<f , pd)
+                                          (nb r pr rˡ rʳ ◁ coverL d<f ∎)
+                                          (nb e pe el er ◁ swap ∎))
+                                        (nb g pg gl gr ◁ keep skip ∎))
+-- Andreas & Julien, 2010-6-1
+
   -- 2.4.2
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                         (nb f pf (nb e pe el er) (nb g pg gl gr)))
       | tri≈ _ x≈d _ with deleteR x (nr d pd (nb c pc cl cr ◁ skip ∎) (nb e pe el er ◁ skip ∎))
-  ... | red   , (nr r pr rˡ rʳ) = , nr r {!!} (nb b {!!} (nb a pa al ar) (rˡ ◁ {!!}) ◁ {!!}) (nb f {!!} (rʳ ◁ {!!}) (nb g pg gl gr) ◁ {!!})
-  ... | black , r              = , (nb f {!!} (nr b {!!} (nb a pa al ar) (r ◁ {!!}) ◁ {!!}) (nb g pg gl gr) ◁ skip ∎)
+  ... | red   , (nr r pr rˡ rʳ) = , nr r pr {- by agsy -} (nb b pb {- by agsy -} (nb a pa al ar) (rˡ ◁ {!!}) ◁ {!!}) (nb f pf {- by agsy -} (rʳ ◁ {!!}) (nb g pg gl gr) ◁ {!!})
+  ... | black , r              = , (nb f pf {- by agsy -} (nr b pb {- by agsy -} (nb a pa al ar) (r ◁ {!!}) ◁ {!!}) (nb g pg gl gr) ◁ skip ∎)
+
+{-
+
   -- 2.4.3
   deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) (nb c pc cl cr))
                         (nb f pf (nb e pe el er) (nb g pg gl gr)))
@@ -444,9 +465,9 @@ mutual
   ... | black , r              = , nr d {!!} (nb b pb (nb a pa aˡ aʳ) c) (nb f {!!} e (r ◁ {!!}) ◁ {!!})
 
   -- 2.1
-  deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb h _ g i)) = {!!}
+  -- deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb h _ g i)) = {!!}
 
-
+  deleteCrawl x (nr y y' (nb a y0 y1 y2) b) = {!!}
 
 
 ------------------------------------------------------------------------
@@ -504,3 +525,4 @@ toList (tree t) = toList' t
 singleton : A → Tree
 singleton x = tree (nb x tt lf lf)
 
+-}
