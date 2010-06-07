@@ -1,4 +1,4 @@
-{--# OPTIONS --no-coverage-check #-}
+{-# OPTIONS --no-coverage-check #-}
 
 {-
 
@@ -349,18 +349,22 @@ mutual
   -- 2.4.2
   deleteCrawl x (nr d pd (nb b (b<d , pb) (nb a pa al ar) (nb c pc cl cr))
                         (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
-      | tri≈ _ x≈d _ with deleteR x (nr d pd (nb c pc cl cr ◁ skip ∎) (nb e pe el er ◁ skip ∎))
-  ... | red   , (nr r pr rˡ rʳ) = , nr r pr
-                                    (nb b (b<d , pb)
-                                      (nb a pa al ar) (rˡ ◁ {!!}) ◁ {!!})
-                                    (nb f (d<f , pf) (rʳ ◁ {!!})
-                                      (nb g pg gl gr) ◁ {!!})
-  ... | black , (nb r pr rˡ rʳ) = , nb f pf
-                                      (nr b (trans b<d d<f , pb)
-                                        ((nb a pa al ar ◁ keep skip ∎) ◁ coverL (trans b<d d<f) ∎)
-                                        (nb r pr rˡ rʳ ◁ {!!}))
-                                      (nb g pg gl gr ◁ keep skip ∎)
-
+      | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd) (nb c pc cl cr ◁ swap (coverL d<f (keep swap ∎))) (nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}))
+  ... | red   , (nr r (b<r , r<f , pr) rˡ rʳ) = 
+           , nr r pr
+                (nb b (b<r , pb)
+                  ((nb a pa al ar ◁ keep skip ∎) ◁ coverL b<r ∎)
+                  (rˡ ◁ swap (keep (keep (skip ∎))) {- by agsy -}))
+                (nb f (r<f , pf) 
+                  (rʳ ◁ swap (skip (swap ∎)) {- by agsy -})
+                  ((nb g pg gl gr ◁ keep skip ∎) ◁ coverR r<f ∎))
+  ... | black , (nb r (b<r , r<f , pr) rˡ rʳ) = 
+           , nb f pf
+                (nr b (trans b<d d<f , pb)
+                  ((nb a pa al ar ◁ keep skip ∎) ◁ coverL (trans b<d d<f) ∎)
+                  (nb r (b<r , r<f , pr) rˡ rʳ ◁ ∎))
+                (nb g pg gl gr ◁ keep skip ∎)
+{-
   -- 2.4.1
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                          (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
@@ -446,13 +450,13 @@ mutual
   deleteCrawl x (nr d _ (nb b pb (nb a pa aˡ aʳ) c) (nb h _ (nr f pf e g) (nb i pi iˡ iʳ)))
       | tri< x<d _ _ with deleteR x (nr b pb (nb a pa aˡ aʳ) c)
   ... | _ , r = , {!!}
-
+{-
   -- 2.2.2
-  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr (f<h, d<f, pf) pf e g) i))
+  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr (f<h , d<f , pf) pf e g) i))
       | tri≈ _ x≈d _ with deleteR x (nr d pd (c ◁ skip ∎) (e ◁ skip skip ∎))
   ... | red   , nr r pr rˡ rʳ = , nr f pf (nb r pr (nr b pb (nb a pa aˡ aʳ) (rˡ ◁ {!!}) ◁ {!!}) rʳ) (nb h ph (g ◁ {!!}) i ◁ {!!})
   ... | black , r              = , nr f pf (nb b pb (nb a pa aˡ aʳ) r ◁ {!!}) (nb h ph (g ◁ {!!}) i ◁ {!!})
-
+-}
   deleteCrawl x (nr d _ (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr f pf e g) i))
       | tri> _ _ x>d with compare x h
 
@@ -475,6 +479,8 @@ mutual
 
   -- 2.1
   deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb h _ g i)) = {!!}
+
+-}
 
 {-
 
