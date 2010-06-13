@@ -101,17 +101,17 @@ colorOf (nb a pa l r) = black (nb a pa l r)
 
 data Type : Set where
   ok   : Type
-  nrrˡ : Type
-  nrrʳ : Type
+  nrrl : Type
+  nrrr : Type
   
 data Almost (β : Bounds) : Type → ℕ → Set where
   ok   : ∀ {c n} → Tree' β c n → Almost β ok n
-  nrrˡ : ∀ {n} → (a : A) → a is β
+  nrrl : ∀ {n} → (a : A) → a is β
        → Tree' (leftOf a ∷ β) red n → Tree' (rightOf a ∷ β) black n
-       → Almost β nrrˡ n
-  nrrʳ : ∀ {n} → (a : A) → a is β
+       → Almost β nrrl n
+  nrrr : ∀ {n} → (a : A) → a is β
        → Tree' (leftOf a ∷ β) black n → Tree' (rightOf a ∷ β) red n
-       → Almost β nrrʳ n
+       → Almost β nrrr n
 
 data TypeDel : Set where
   dok    : TypeDel
@@ -140,20 +140,20 @@ colorFlip b pb l r = nr b pb (colorFlip' l) (colorFlip' r)
     colorFlip' (nr a pa l r) = nb a pa l r
 
 rotateRightColorFlip : ∀ {β n} → (a : A) → a is β
-  → Almost (leftOf a ∷ β) nrrˡ n → Tree' (rightOf a ∷ β) black n
+  → Almost (leftOf a ∷ β) nrrl n → Tree' (rightOf a ∷ β) black n
   → Tree' β red (suc n)
-rotateRightColorFlip a pa (nrrˡ b (b<a , pb) (nr d (d<b , _ , pd) lll llr) lr) r
+rotateRightColorFlip a pa (nrrl b (b<a , pb) (nr d (d<b , _ , pd) lll llr) lr) r
   = nr b pb (nb d (d<b , pd) (lll ◁ keep keep skip ∎) (llr ◁ keep keep skip ∎))
             (nb a (b<a , pa) (lr ◁ swap ∎) (r ◁ coverR b<a ∎))
 
 rotateLeftRotateRightColorFlip : ∀ {β n} → (a : A) → a is β
-  → Almost (leftOf a ∷ β) nrrʳ n → Tree' (rightOf a ∷ β) black n
+  → Almost (leftOf a ∷ β) nrrr n → Tree' (rightOf a ∷ β) black n
   → Tree' β red (suc n)
 rotateLeftRotateRightColorFlip a pa l r with rotateLeft' l
   where
-    rotateLeft' : ∀ {β n} → Almost β nrrʳ n → Almost β nrrˡ n
-    rotateLeft' (nrrʳ a pa l (nr b (a<b , pb) rl rr))
-      = nrrˡ b pb 
+    rotateLeft' : ∀ {β n} → Almost β nrrr n → Almost β nrrl n
+    rotateLeft' (nrrr a pa l (nr b (a<b , pb) rl rr))
+      = nrrl b pb 
           (nr a (a<b , pa) 
             (l  ◁ coverL a<b ∎)
             (rl ◁ swap ∎)) 
@@ -343,6 +343,7 @@ mutual
 
   deleteCrawl : ∀ {n β} → A → Tree' β red (2 + n) → ∃ λ c' → Tree' β c' (2 + n)
 
+{-
   -- 2.4
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                          (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare x d
@@ -350,29 +351,28 @@ mutual
   deleteCrawl x (nr d pd (nb b (b<d , pb) (nb a pa al ar) (nb c pc cl cr))
                         (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
       | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd) (nb c pc cl cr ◁ swap (coverL d<f (keep swap ∎))) (nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}))
-  ... | red   , (nr r (b<r , r<f , pr) rˡ rʳ) = 
+  ... | red   , (nr r (b<r , r<f , pr) rl rr) = 
            , nr r pr
                 (nb b (b<r , pb)
                   ((nb a pa al ar ◁ keep skip ∎) ◁ coverL b<r ∎)
-                  (rˡ ◁ swap (keep (keep (skip ∎))) {- by agsy -}))
-                (nb f (r<f , pf) 
-                  (rʳ ◁ swap (skip (swap ∎)) {- by agsy -})
+                  (rl ◁ swap (keep (keep (skip ∎))) {- by agsy -}))
+                (nb f (r<f , pf {- by agsy -}) 
+                  (rr ◁ swap (skip (swap ∎)) {- by agsy -})
                   ((nb g pg gl gr ◁ keep skip ∎) ◁ coverR r<f ∎))
-  ... | black , (nb r (b<r , r<f , pr) rˡ rʳ) = 
+  ... | black , (nb r (b<r , r<f , pr) rl rr) = 
            , nb f pf
                 (nr b (trans b<d d<f , pb)
                   ((nb a pa al ar ◁ keep skip ∎) ◁ coverL (trans b<d d<f) ∎)
-                  (nb r (b<r , r<f , pr) rˡ rʳ ◁ ∎))
+                  (nb r (b<r , r<f , pr) rl rr ◁ ∎))
                 (nb g pg gl gr ◁ keep skip ∎)
-{-
   -- 2.4.1
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                          (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
     | tri< x<d ̸x≈d ̸x>d with deleteR x (nr b pb {- by agsy -} (nb a pa al ar) (nb c pc cl cr))
-  ... | red   , (nr r pr rˡ rʳ) = , nr d pd {- by agsy -} (nb r pr rˡ rʳ) (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr))
-  ... | black , (nb r pr rˡ rʳ) = , (nb f pf
+  ... | red   , (nr r pr rl rr) = , nr d pd {- by agsy -} (nb r pr rl rr) (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr))
+  ... | black , (nb r pr rl rr) = , (nb f pf
                                         (nr d (d<f , pd)
-                                          (nb r pr rˡ rʳ ◁ coverL d<f ∎)
+                                          (nb r pr rl rr ◁ coverL d<f ∎)
                                           (nb e pe el er ◁ swap ∎))
                                         (nb g pg gl gr ◁ keep skip ∎))
 -- Andreas & Julien, 2010-6-1
@@ -381,15 +381,18 @@ mutual
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                          (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
     | tri> _ _ x>d with deleteR x (nr f (d<f , pf) (nb e pe el er) (nb g pg gl gr))
-  ... | red   , (nr r pr rˡ rʳ) = , nr d pd
+  ... | red   , (nr r pr rl rr) = , nr d pd
                                     (nb b pb (nb a pa al ar) (nb c pc cl cr))
-                                    (nb r pr rˡ rʳ)
-  ... | black , (nb r pr rˡ rʳ) = , nb d pd
+                                    (nb r pr rl rr)
+  ... | black , (nb r pr rl rr) = , nb d pd
                                     (nr b pb (nb a pa al ar) (nb c pc cl cr))
-                                    (nb r pr rˡ rʳ)
+                                    (nb r pr rl rr)
+-}
 
   -- 2.3
   deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k)) with compare x d
+
+{-
 
   -- 2.3.1
   deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
@@ -397,31 +400,45 @@ mutual
   ... | _ , r = , nr f pf (nb d pd r e) (nb j pj (nr h ph g i) k)
 
   -- 2.3.2a
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
-      | tri≈ _ x≈d _ with deleteR x (nr d pd (c ◁ skip ∎) e)
-  ... | red    , nr r pr rˡ rʳ = , nr f pf (nb r pr (nr b pb a (rˡ ◁ {!!}) ◁ {!!}) rʳ)
-                                         (nb j pj (nr h ph g i) k)
-  ... | black  , r             = , nr f pf (nb b pb a (r ◁ {!!}) ◁ skip ∎)
-                                         (nb j pj (nr h ph g i) k)
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb)
+                                              (nb a pa al ar)
+                                              (nb c (b<c , c<d , c<f , pc) cl cr))
+                         (nb e pe el er)) (nb j pj (nr h ph g i) k))
+      | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd)
+                                        (nb c (b<c , c<d , c<f , pc) cl cr ◁ swap ∎)
+                                        (nb e pe el er ◁ coverR b<d ∎))
+  ... | black  , r = , nr f pf (nb b (trans b<d d<f , pb) (nb a pa al ar ◁ keep skip ∎) r)
+                                     (nb j pj (nr h ph g i) k)
+  ... | red    , _ = , {!!}
+
+-}
 
   deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
       | tri> _ _ x>d with compare x f
 
   -- 2.3.2b
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
-      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d pd (c ◁ skip ∎) e)
-  ... | red    , nr r pr rˡ rʳ = , nr f pf (nb r pr (nr b pb a (rˡ ◁ {!!}) ◁ {!!}) rʳ)
-                                          (nb j pj (nr h ph g i) k)
-  ... | black  , r             = , nr f pf (nb b pb a (r ◁ {!!}) ◁ skip ∎)
-                                           (nb j pj (nr h ph g i) k)
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb)
+                                              (nb a pa al ar)
+                                              (nb c (b<c , c<d , c<f , pc) cl cr))
+                         (nb e pe el er)) (nb j pj (nr h ph g i) k))
+      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d (b<d , d<f , pd)
+                                        (nb c (b<c , c<d , c<f , pc) cl cr ◁ swap ∎)
+                                        (nb e pe el er ◁ coverR b<d ∎))
+  ... | black  , r = , nr f pf (nb b (trans b<d d<f , pb) (nb a pa al ar ◁ keep skip ∎) r)
+                                     (nb j pj (nr h ph g i) k)
+  ... | red    , _ = {!!}
 
   -- 2.3.3
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
-      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f pf (e ◁ skip ∎) (g ◁ skip skip ∎))
-  ... | red   , nr r pr rˡ rʳ = , nr r pr (nb d pd (nr b pb a c) (rˡ ◁ {!!}) ◁ {!!})
-                                         (nb j pj (nr h ph g i) k  ◁ {!!})
-  ... | black , r             = , (nr d pd (nb b pb a c) (nb j pj (nr h ph (r ◁ {!!}) i) k ◁ {!!}) ◁ skip ∎)
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b pb a c) e) (nb j (f<j , pj) (nr h (h<j , f<h , ph) g i) k))
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f (f<h , f<j , d<f , pf)
+                                                       (e ◁ swap (coverL f<j (coverL f<h ∎)))
+                                                       (((g ◁ keep swap ∎)
+                                                            ◁ swap coverR d<f ∎)
+                                                            ◁ keep swap keep swap ∎))
+  ... | black , r             = , (nr d {!!} (nb b {!!} a c) (nb j {!!} (nr h {!!} (r ◁ {!!}) i) k ◁ {!!}) ◁ {!!})
+  ... | red   , _ = {!!}
 
+{-
 
   deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb j _ (nr h _ g i) k))
       | tri> _ _ x>d | tri> _ _ x>f with compare x j
@@ -434,48 +451,48 @@ mutual
   -- 2.3.5a
   deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
       | tri> _ _ x>d | tri> _ _ x>f | tri≈ _ x≈j _ with deleteR x (nr j pj (i ◁ skip ∎) k)
-  ... | red   , nr r pr rˡ rʳ = , (nr f pf (nb d pd (nr b pb a c) e) (nb r pr (nr h ph g (rˡ ◁ {!!}) ◁ {!!}) rʳ))
+  ... | red   , nr r pr rl rr = , (nr f pf (nb d pd (nr b pb a c) e) (nb r pr (nr h ph g (rl ◁ {!!}) ◁ {!!}) rr))
   ... | black , r             = , (nr f pf (nb d pd (nr b pb a c) e) (nb h ph g (r ◁ {!!})  ◁ {!!}))
 
   -- 2.3.5b
   deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb j pj (nr h ph g i) k))
       | tri> _ _ x>d | tri> _ _ x>f | tri> _ _ x>j with deleteR x (nr j pj (i ◁ skip ∎) k)
-  ... | red   , nr r pr rˡ rʳ = , (nr f pf (nb d pd (nr b pb a c) e) (nb r pr (nr h ph g (rˡ ◁ {!!}) ◁ {!!}) rʳ))
+  ... | red   , nr r pr rl rr = , (nr f pf (nb d pd (nr b pb a c) e) (nb r pr (nr h ph g (rl ◁ {!!}) ◁ {!!}) rr))
   ... | black , r             = , (nr f pf (nb d pd (nr b pb a c) e) (nb h ph g (r ◁ {!!})  ◁ skip ∎))
 
   -- 2.2
-  deleteCrawl x (nr d _ (nb b pb (nb a pa aˡ aʳ) c) (nb h _ (nr f _ e g) i)) with compare x d
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) c) (nb h _ (nr f _ e g) i)) with compare x d
 
   -- 2.2.1
-  deleteCrawl x (nr d _ (nb b pb (nb a pa aˡ aʳ) c) (nb h _ (nr f pf e g) (nb i pi iˡ iʳ)))
-      | tri< x<d _ _ with deleteR x (nr b pb (nb a pa aˡ aʳ) c)
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) c) (nb h _ (nr f pf e g) (nb i pi il ir)))
+      | tri< x<d _ _ with deleteR x (nr b pb (nb a pa al ar) c)
   ... | _ , r = , {!!}
 {-
   -- 2.2.2
-  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr (f<h , d<f , pf) pf e g) i))
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) c) (nb h ph (nr (f<h , d<f , pf) pf e g) i))
       | tri≈ _ x≈d _ with deleteR x (nr d pd (c ◁ skip ∎) (e ◁ skip skip ∎))
-  ... | red   , nr r pr rˡ rʳ = , nr f pf (nb r pr (nr b pb (nb a pa aˡ aʳ) (rˡ ◁ {!!}) ◁ {!!}) rʳ) (nb h ph (g ◁ {!!}) i ◁ {!!})
-  ... | black , r              = , nr f pf (nb b pb (nb a pa aˡ aʳ) r ◁ {!!}) (nb h ph (g ◁ {!!}) i ◁ {!!})
+  ... | red   , nr r pr rl rr = , nr f pf (nb r pr (nr b pb (nb a pa al ar) (rl ◁ {!!}) ◁ {!!}) rr) (nb h ph (g ◁ {!!}) i ◁ {!!})
+  ... | black , r              = , nr f pf (nb b pb (nb a pa al ar) r ◁ {!!}) (nb h ph (g ◁ {!!}) i ◁ {!!})
 -}
-  deleteCrawl x (nr d _ (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr f pf e g) i))
+  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) c) (nb h ph (nr f pf e g) i))
       | tri> _ _ x>d with compare x h
 
   -- 2.2.3
-  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr f pf e g) i))
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) c) (nb h ph (nr f pf e g) i))
       | tri> _ _ x>d | tri< x<h _ _ with deleteR x (nr f pf e g)
-  ... | _ , r = , nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph r i)
+  ... | _ , r = , nr d pd (nb b pb (nb a pa al ar) c) (nb h ph r i)
 
   -- 2.2.4a
-  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr f pf e g) i))
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) c) (nb h ph (nr f pf e g) i))
       | tri> _ _ x>d | tri≈ _ x≈h _ with deleteR x (nr h ph (g ◁ skip ∎) i)
-  ... | red   , nr r pr rˡ rʳ = , nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb r pr (nr f pf e (rˡ ◁ {!!}) ◁ {!!}) rʳ)
-  ... | black , r              = , nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb f pf e (r ◁ {!!}) ◁ {!!})
+  ... | red   , nr r pr rl rr = , nr d pd (nb b pb (nb a pa al ar) c) (nb r pr (nr f pf e (rl ◁ {!!}) ◁ {!!}) rr)
+  ... | black , r              = , nr d pd (nb b pb (nb a pa al ar) c) (nb f pf e (r ◁ {!!}) ◁ {!!})
 
   -- 2.2.4b
-  deleteCrawl x (nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb h ph (nr f pf e g) i))
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) c) (nb h ph (nr f pf e g) i))
       | tri> _ _ x>d | tri> _ _ x>h with deleteR x (nr h ph (g ◁ {!!}) i)
-  ... | red   , nr r pr rˡ rʳ = , nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb r pr (nr f pf e (rˡ ◁ {!!}) ◁ {!!}) rʳ)
-  ... | black , r              = , nr d pd (nb b pb (nb a pa aˡ aʳ) c) (nb f pf e (r ◁ {!!}) ◁ {!!})
+  ... | red   , nr r pr rl rr = , nr d pd (nb b pb (nb a pa al ar) c) (nb r pr (nr f pf e (rl ◁ {!!}) ◁ {!!}) rr)
+  ... | black , r              = , nr d pd (nb b pb (nb a pa al ar) c) (nb f pf e (r ◁ {!!}) ◁ {!!})
 
   -- 2.1
   deleteCrawl x (nr f _ (nb d _ (nr b _ a c) e) (nb h _ g i)) = {!!}
@@ -495,8 +512,8 @@ mutual
     = _ , nb b pb (proj₂ (insertB a (a<b , pa) l)) r
   insertB a pa (nb b pb l r) | tri< a<b _ _ | red   .l with insertR a (a<b , pa) l
   ... | ok   , ok l' = _ , nb b pb l' r
-  ... | nrrˡ , l'    = _ , rotateRightColorFlip           b pb l' r
-  ... | nrrʳ , l'    = _ , rotateLeftRotateRightColorFlip b pb l' r
+  ... | nrrl , l'    = _ , rotateRightColorFlip           b pb l' r
+  ... | nrrr , l'    = _ , rotateLeftRotateRightColorFlip b pb l' r
   insertB a pa (nb b pb l r) | tri≈ _ _ _  = _ , nb b pb l r
   insertB a pa (nb b pb l r) | tri> _ _ b<a with colorOf l | insertB a (b<a , pa) r
   ... | _        | black , r' = _ , nb b pb l r'
@@ -506,11 +523,11 @@ mutual
   insertR : ∀ {β n} → (a : A) → a is β → Tree' β red n → ∃ λ t → Almost β t n
   insertR a pa (nr b pb l r) with compare a b
   insertR a pa (nr b pb l r) | tri< a<b _ _ with insertB a (a<b , pa) l
-  ... | red   , l' = _ , nrrˡ b pb l' r
+  ... | red   , l' = _ , nrrl b pb l' r
   ... | black , l' = _ , ok (nr b pb l' r)
   insertR a pa (nr b pb l r) | tri≈ _ _ _  = _ , ok (nr b pb l r)
   insertR a pa (nr b pb l r) | tri> _ _ b<a with insertB a (b<a , pa) r
-  ... | red   , r' = _ , nrrʳ b pb l r'
+  ... | red   , r' = _ , nrrr b pb l r'
   ... | black , r' = _ , ok (nr b pb l r')
   
 
