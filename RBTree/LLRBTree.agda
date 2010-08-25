@@ -1,4 +1,4 @@
-{-# OPTIONS --no-coverage-check #-}
+{-# OPTIONS #-}
 
 {-
 
@@ -343,7 +343,6 @@ mutual
 
   deleteCrawl : ∀ {n β} → A → Tree' β red (2 + n) → ∃ λ c' → Tree' β c' (2 + n)
 
-{-
   -- 2.4
   deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) (nb c pc cl cr))
                          (nb f pf (nb e pe el er) (nb g pg gl gr))) with compare x d
@@ -569,22 +568,20 @@ mutual
                                       f' = nb f (d<f , pf) e' r
                                   in nr d pd (nb b pb (nb a pa al ar) c) f'
 
--}
-
   -- 2.1
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph g i)) with compare x d
+  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph (nb g pg gl gr) i)) with compare x d
 
   -- 2.1.1
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph g i))
+  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph (nb g pg gl gr) i))
       | tri< x<d _ _ with deleteR x (nr b pb a c)
-  ... | _ , r = , nr f pf (nb d pd r e) (nb h ph g i)
+  ... | _ , r = , nr f pf (nb d pd r e) (nb h ph (nb g pg gl gr) i)
 
-  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph g i))
+  deleteCrawl x (nr f pf (nb d pd (nr b pb a c) e) (nb h ph (nb g pg gl gr) i))
       | tri> _ _ x>d with compare x f
 
   -- 2.1.2
-  deleteCrawl x (nr f pf (nb d pd (nr b (b<d , b<f , pb) a c) e) (nb h ph g i))
-      | tri> _ _ x>d | tri> _ _ x>f with deleteR x (nr d (b<d , pd)
+  deleteCrawl x (nr f pf (nb d pd (nr b (b<d , b<f , pb) a c) e) (nb h ph (nb g pg gl gr) i))
+      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d (b<d , pd)
                                                          (c ◁ swap ∎)
                                                          (e ◁ coverR b<d ∎))
   ... | red , nr r (b<r , r<f , pr) rl rr = ,
@@ -593,20 +590,51 @@ mutual
                                     a' = a ◁ coverL b<r (keep keep skip ∎)
                                     b' = nr b (b<r , b<f , pb) a' rl'
                                     r' = nb r (r<f , pr) b' rr' 
-                                 in nr f pf r' (nb h ph g i)
+                                 in nr f pf r' (nb h ph (nb g pg gl gr) i)
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
-                                 in nr f pf b' (nb h ph g i)
+                                 in nr f pf b' (nb h ph (nb g pg gl gr) i)
 
   -- 2.1.3
-  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb) a c) e) (nb h (f<h , ph) g i))
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb) a c) e) (nb h (f<h , ph) (nb g pg gl gr) i))
       | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f {!!}
-                                                         {!!}
-                                                         {!!})
+                                                         (e ◁ swap coverL f<h ∎)
+                                                         ((nb g pg gl gr ◁ keep coverR d<f ∎) ◁ swap ∎))
   ... | _ , r = , let b' = nb b (b<d , b<f , pb) a c ◁ keep skip ∎
                       i' = i ◁ keep coverR d<f (skip ∎)
                       h' = nb h (trans d<f f<h , ph) r i'
                   in nr d pd b' h'
+
+  -- 2.1.4
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb) a c) e) (nb h (f<h , ph) (nb g pg gl gr) i))
+      | tri> _ _ x>d | tri> _ _ x>f with deleteR x (nr h (f<h , ph) (nb g pg gl gr) i ◁ coverR d<f ∎)
+  ... | red , nr r (f<r , d<r , pr) rl rr = ,
+                                let b' = nb b (b<d , b<f , pb) a c ◁ keep skip ∎
+                                    e' = e ◁ swap coverL f<r ∎
+                                    rl' = rl ◁ swap ∎
+                                    f' = nr f (f<r , d<f , pf) e' rl'
+                                    rr' = rr ◁ keep skip ∎
+                                    r' = nb r (d<r , pr) f' rr'
+                                in nr d pd b' r'
+  ... | black , r           = , let b' = nb b (b<d , b<f , pb) a c ◁ keep skip ∎
+                                    e' = e ◁ swap ∎
+                                    f' = nb f (d<f , pf) e' r
+                                in nr d pd b' f'
+
+  deleteCrawl x (nr f pf (nb d pd (nr b (b<d , b<f , pb) a c) e) (nb h ph (nb g pg gl gr) i))
+      | tri≈ _ x≈d _ with deleteR x (nr d (b<d , pd)
+                                                         (c ◁ swap ∎)
+                                                         (e ◁ coverR b<d ∎))
+  ... | red , nr r (b<r , r<f , pr) rl rr = ,
+                                let rl' = rl ◁ swap ∎
+                                    rr' = rr ◁ keep skip ∎
+                                    a' = a ◁ coverL b<r (keep keep skip ∎)
+                                    b' = nr b (b<r , b<f , pb) a' rl'
+                                    r' = nb r (r<f , pr) b' rr' 
+                                 in nr f pf r' (nb h ph (nb g pg gl gr) i)
+  ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
+                                    b' = nb b (b<f , pb) a' r
+                                 in nr f pf b' (nb h ph (nb g pg gl gr) i)
 
 {-
 
