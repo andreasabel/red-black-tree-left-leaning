@@ -498,9 +498,16 @@ mutual
   deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) c) (nb h _ (nr f _ e g) i)) with compare x d
 
   -- 2.2.1
-  deleteCrawl x (nr d _ (nb b pb (nb a pa al ar) c) (nb h _ (nr f pf e g) (nb i pi il ir)))
-      | tri< x<d _ _ with deleteR x (nr b pb (nb a pa al ar) c)
-  ... | _ , r = , {!!}
+  deleteCrawl x (nr d pd (nb b pb (nb a pa al ar) c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i))
+      | tri< x<d _ _ with deleteR x (nr b pb (nb a pa al ar) c ◁ coverL d<f ∎)
+  ... | red   , nr r pr rl rr = ,
+                                  nr d pd (nb r pr rl rr ◁ keep skip ∎) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i)
+  ... | black , r             = , let e' = (e ◁ keep skip ∎) ◁ swap ∎
+                                      d' = nb d (d<f , pd) r e'
+                                      g' = g ◁ swap keep keep skip ∎
+                                      i' = i ◁ coverR f<h (keep keep skip ∎)
+                                      h' = nb h (f<h , ph) g' i'
+                                  in nr f pf d' h'
 
   -- 2.2.2
   deleteCrawl x (nr d pd (nb b (b<d , pb) (nb a pa al ar) c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i))
