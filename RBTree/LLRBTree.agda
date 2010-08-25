@@ -598,6 +598,15 @@ mutual
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph g i)
 
+  -- 2.1.3
+  deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb) a c) e) (nb h (f<h , ph) g i))
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f {!!}
+                                                         {!!}
+                                                         {!!})
+  ... | _ , r = , let b' = nb b (b<d , b<f , pb) a c ◁ keep skip ∎
+                      i' = i ◁ keep coverR d<f (skip ∎)
+                      h' = nb h (trans d<f f<h , ph) r i'
+                  in nr d pd b' h'
 
 {-
 
