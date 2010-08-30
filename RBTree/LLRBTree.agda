@@ -278,14 +278,19 @@ foo .{0} {leftOf z ∷ zs} (nb a pa lf lf) = pa
 foo .{0} {leftOf z ∷ zs} (nb b pb (nr a (a<b , pa) lf lf) c) = pa
 foo .{0} {leftOf z ∷ zs} (nr b pb (nb a (a<b , pa) lf lf) c ) = pa
 foo .{0} {leftOf z ∷ zs} (nr d pd (nb b pb (nr a (a<b , a<d , pa) lf lf) c) e) = pa
-foo {suc n} {leftOf z ∷ zs} (nb b pb a c) = {!!}
-foo {suc n} {leftOf z ∷ zs} (nr b pb a c) = {!!}
+foo {suc n} {leftOf z ∷ zs} (nb b pb a c) = foo (nb b pb a c)
+foo {suc n} {leftOf z ∷ zs} (nr b pb a c) = foo (nr b pb a c)
 foo .{0} {rightOf z ∷ zs} (nb a pa lf lf) = pa
 foo .{0} {rightOf z ∷ zs} (nb b pb (nr a (a<b , pa) lf lf) c) = pa
 foo .{0} {rightOf z ∷ zs} (nr b pb (nb a (a<b , pa) lf lf) c ) = pa
 foo .{0} {rightOf z ∷ zs} (nr d pd (nb b pb (nr a (a<b , a<d , pa) lf lf) c) e) = pa
-foo {suc n} {rightOf z ∷ zs} (nb b pb a c) = {!!}
-foo {suc n} {rightOf z ∷ zs} (nr b pb a c) = {!!}
+foo {suc n} {rightOf z ∷ zs} (nb b pb a c) = foo (nb b pb a c)
+foo {suc n} {rightOf z ∷ zs} (nr b pb a c) = foo (nr b pb a c)
+
+-- deleteMinR : ∀ {n β} → Tree' β red n -> ∃ λ c' → Tree' β c' n
+
+-- bar : ∀ {n β t} → (t : Tree' β red (suc n)) → (deleteMinR t) is β
+-- bar = ?
 
 mutual
   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
@@ -331,13 +336,21 @@ mutual
   ... | no  _ = , nr c pc (nb b (b<c , pb) (nr a (a<b , trans a<b b<c , pa) lf lf) lf) (nb e (trans c<d d<e , pe) lf lf)
 
 
+  deleteR {suc (suc n)} x (nr a pa l r) = deleteCrawl x (nr a pa l r)
+
+{-
   deleteR {suc (suc n)} x (nr a pa l r) with x ≟ a
+
   ... | yes _ with deleteMinR (nr a pa l r)
-  ... | red   , nr a' pa' l' r' = , nr (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
-  ... | black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
+
+  deleteR {suc (suc n)} x (nr a pa l r)
+      | yes _ | red   , nb a' pa' l' r' = , nr (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
+
+  deleteR {suc (suc n)} x (nr a pa l r)
+      | yes _ | black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
+
   deleteR {suc (suc n)} x (nr a pa l r) | no  _ = deleteCrawl x (nr a pa l r)
-
-
+-}
 
 
 
@@ -597,7 +610,7 @@ mutual
 
   -- 2.1.3
   deleteCrawl x (nr f pf (nb d (d<f , pd) (nr b (b<d , b<f , pb) a c) e) (nb h (f<h , ph) (nb g pg gl gr) i))
-      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f {!!}
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f (f<h , d<f , pf)
                                                          (e ◁ swap coverL f<h ∎)
                                                          ((nb g pg gl gr ◁ keep coverR d<f ∎) ◁ swap ∎))
   ... | _ , r = , let b' = nb b (b<d , b<f , pb) a c ◁ keep skip ∎
@@ -635,7 +648,6 @@ mutual
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph (nb g pg gl gr) i)
-
 {-
 
 ------------------------------------------------------------------------
