@@ -1,29 +1,18 @@
 {-# OPTIONS #-}
 
-{-
-
-  Left Leaning Red Black Trees
-
-  Written by
-  Linus Ek, Ola Holmström and Stevan Andjelkovic <{linek,olahol,stevan}@student.chalmers.se>
-  http://web.student.chalmers.se/groups/datx02-dtp/
-
--}
-
--- import Level
+open import Level
 import Relation.Binary
 open Relation.Binary hiding (_⇒_)
 
 open import Relation.Binary.PropositionalEquality hiding (trans)
 open import Relation.Nullary
 
--- module LLRBTree (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
-module LLRBTree (order : StrictTotalOrder) where
+module LLRBTree (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
 
 open module sto = StrictTotalOrder order
 
 A : Set
-A = StrictTotalOrder.carrier order
+A = StrictTotalOrder.Carrier order
   
 open import Data.Unit hiding (_≟_)
 open import Data.Empty
@@ -252,46 +241,6 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3
       , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
 
 
--- top level function, not really useful, I suppose
--- deleteMin : ∀ {β n} → Tree' β black (suc n) -> ∃₂ λ β' n' -> Tree' β' black n'
--- deleteMin lf = lf
--- deleteMin (nb a pa lf lf) = lf
--- deleteMin (nb a pa (nr b pb t1 t2) t3) with deleteMinR (nr b pb t1 t2) 
--- ... | β' , _ , t' = nb a pa t' t3   
--- deleteMin (nb a pa (nb b pb t1 t2) t3) 
---   with deleteMinR (nr a pa (nb b pb t1 t2) t3) 
--- ... | β' , _ , t' = makeBlack t'
--- deleteMin (nr a pa l r) with deleteMinR (nr a pa l r)
--- ... | β' , c' , t' = , , makeBlack t'
-
-minKey : ∀ {n β c} → Tree' β c (suc n) → A
-minKey .{0} (nb a _ lf lf) = a
-minKey .{0} (nb _ _ (nr a _ lf lf) _) = a
-minKey .{0} (nr _ _ (nb a _ lf lf) _ ) = a
-minKey .{0} (nr _ _ (nb _ _ (nr a _ lf lf) _) _) = a
-minKey {suc n} (nb _ _ l r) = minKey l
-minKey {suc n} (nr _ _ l r) = minKey l
-
-foo : ∀ {n β c} → (t : Tree' β c (suc n)) → (minKey t) is β
-foo {n} {[]} t = tt
-foo .{0} {leftOf z ∷ zs} (nb a pa lf lf) = pa
-foo .{0} {leftOf z ∷ zs} (nb b pb (nr a (a<b , pa) lf lf) c) = pa
-foo .{0} {leftOf z ∷ zs} (nr b pb (nb a (a<b , pa) lf lf) c ) = pa
-foo .{0} {leftOf z ∷ zs} (nr d pd (nb b pb (nr a (a<b , a<d , pa) lf lf) c) e) = pa
-foo {suc n} {leftOf z ∷ zs} (nb b pb a c) = foo (nb b pb a c)
-foo {suc n} {leftOf z ∷ zs} (nr b pb a c) = foo (nr b pb a c)
-foo .{0} {rightOf z ∷ zs} (nb a pa lf lf) = pa
-foo .{0} {rightOf z ∷ zs} (nb b pb (nr a (a<b , pa) lf lf) c) = pa
-foo .{0} {rightOf z ∷ zs} (nr b pb (nb a (a<b , pa) lf lf) c ) = pa
-foo .{0} {rightOf z ∷ zs} (nr d pd (nb b pb (nr a (a<b , a<d , pa) lf lf) c) e) = pa
-foo {suc n} {rightOf z ∷ zs} (nb b pb a c) = foo (nb b pb a c)
-foo {suc n} {rightOf z ∷ zs} (nr b pb a c) = foo (nr b pb a c)
-
--- deleteMinR : ∀ {n β} → Tree' β red n -> ∃ λ c' → Tree' β c' n
-
--- bar : ∀ {n β t} → (t : Tree' β red (suc n)) → (deleteMinR t) is β
--- bar = ?
-
 mutual
   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
 
@@ -337,22 +286,6 @@ mutual
 
 
   deleteR {suc (suc n)} x (nr a pa l r) = deleteCrawl x (nr a pa l r)
-
-{-
-  deleteR {suc (suc n)} x (nr a pa l r) with x ≟ a
-
-  ... | yes _ with deleteMinR (nr a pa l r)
-
-  deleteR {suc (suc n)} x (nr a pa l r)
-      | yes _ | red   , nb a' pa' l' r' = , nr (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
-
-  deleteR {suc (suc n)} x (nr a pa l r)
-      | yes _ | black , nb a' pa' l' r' = , nb (minKey r) (proj₂ (foo r)) (l' ◁ {!!}) (r' ◁ {!!})
-
-  deleteR {suc (suc n)} x (nr a pa l r) | no  _ = deleteCrawl x (nr a pa l r)
--}
-
-
 
   deleteCrawl : ∀ {n β} → A → Tree' β red (2 + n) → ∃ λ c' → Tree' β c' (2 + n)
 
