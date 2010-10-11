@@ -581,7 +581,22 @@ mutual
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph (nb g pg gl gr) i)
+
+delete' : ∀ {n β c} → A → Tree' β c (suc n)
+  → (∃ λ c' → Tree' β c' (suc n)) ⊎ (∃ λ c' → Tree' β c' n)
+delete' x t = ?
+
+data Tree : Set where
+  tree : ∀ {n} → Tree' [] black n → Tree
+
 {-
+
+delete : A → Tree → Tree
+delete x (tree t) with delete' x t
+... | inj₁ (nb b pb a c) = tree (nb b pb a c)
+... | inj₁ (nr b pb a c) = tree (nb b pb a c)
+... | inj₂ (nb b pb a c) = tree (nb b pb a c)
+... | inj₂ (nr b pb a c) = tree (nb b pb a c)
 
 ------------------------------------------------------------------------
 
@@ -614,9 +629,6 @@ mutual
   
 
 ------------------------------------------------------------------------
-
-data Tree : Set where
-  tree : ∀ {n} → Tree' [] black n → Tree
 
 insert : A → Tree → Tree
 insert x (tree t) with insertB x tt t
