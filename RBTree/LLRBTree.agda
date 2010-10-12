@@ -19,6 +19,7 @@ open import Data.Empty
 open import Data.Sum
 import Data.Product
 open Data.Product hiding (swap)
+open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Nat hiding (_≤_; _<_; _≟_; compare)
 open import Data.List
 
@@ -67,8 +68,8 @@ data Tree' (β : Bounds) : Color → ℕ → Set where
   nr : ∀ {n}(a : A) → a is β
      → Tree' (leftOf a ∷ β) black n → Tree' (rightOf a ∷ β) black n
      → Tree' β red n
-  nb : ∀ {c n}(a : A) → a is β
-     → Tree' (leftOf a ∷ β) c n → Tree' (rightOf a ∷ β) black n
+  nb : ∀ {leftSonColor n}(a : A) → a is β
+     → Tree' (leftOf a ∷ β) leftSonColor n → Tree' (rightOf a ∷ β) black n
      → Tree' β black (suc n)
 
 infix 3 _◁_
@@ -162,6 +163,7 @@ ifRed black a b = b
 makeBlack : ∀ {c β n} → Tree' β c n → Tree' β black (ifRed c (suc n) n)
 makeBlack {black} t = t
 makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
+
 
 deleteMinR : ∀ {n β} → Tree' β red n -> ∃ λ c' → Tree' β c' n
 
@@ -582,9 +584,69 @@ mutual
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph (nb g pg gl gr) i)
 
+-- the returned bit z indicates whether the tree's black height has shrunk
+deleteB : ∀ {n β} → A → Tree' β black (suc n) → ∃ λ z → Tree' β black (if z then n else (suc n))
+deleteB x (nb a pa lf lf) with x ≟ a
+... | yes _ = true , lf               -- shrunk (black height reduced)
+... | no  _ = false , nb a pa lf lf   -- not shrunk (black height preserved)
+deleteB x (nb b pb (nb a pa al ar) br) with deleteR x (nr b pb (nb a pa al ar) br) 
+... | red   , nr r pr rl rr = false , nb r pr rl rr -- red --> black
+... | black , nb r pr rl rr = true  , nb r pr rl rr -- already black ==> shrunk
+
+deleteB x (nb b pb (nr a pa al ar) br) with compare x b
+
+-- delete in left (red) subtree
+deleteB x (nb b pb (nr a pa al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr a pa al ar))
+-- ... | , nr r pr rl rr = false , nb b pb (nr r pr rl rr) br 
+... | _ , bl' = false , nb b pb bl' br -- whatever comes back, no shrinking
+
+-- would delete in right (black) subtree, but it is a leaf
+deleteB x (nb b pb (nr a pa al ar) lf) | tri> x<b x≈b x>b =  
+  false , (nb b pb (nr a pa al ar) lf)
+-- delete in right (black) subtree
+deleteB x (nb b pb (nr a pa al ar) (nb i pi il ir)) | tri> x<b x≈b x>b with (deleteB x (nb i pi il ir))
+
+-- no shrinkage, just reassemble
+deleteB x (nb b pb (nr a pa al ar) (nb i pi il ir)) | tri> x<b x≈b x>b | false , r = false , nb b pb (nr a pa al ar) r 
+
+-- if there was shrinkage, we need to merge with right brother or parts of it
+{- case: right brother f is a 2-node 
+             [h]              [b]
+   (b)                     [a]         [h]
+[a]     [f]           --->         (f)
+     [d]   [g]   [r]             [d] [g]  [r]
+-}
+deleteB x (nb h ph (nr b pb a (nb {leftSonColor = black} f pf d g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
+  false , (nb b ? a (nb h ? (nr f ? d g) r))
+{- case: right brother f is a 3-node
+             [h]                    [f]
+   (b)                        (b)
+[a]     [f]           ---> [a]  [d]      [h]
+    (d)           
+  [c] [e] [g]   [r]           [c] [e]  [g] [r] 
+-} 
+deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
+  false , (nb f ? (nr b ? a (nb d pd c e)) (nb h ? g r))
+
+-- delete root
+deleteB x (nb b pb (nr a pa al ar) br) | tri≈ _ x≈b _ = {!!}
+
+{-
+deleteB : ∀ {n β} → A → Tree' β black (suc n) → ∃ λ c' → Tree' β c' (ifRed c' n (suc n))
+deleteB x (nb a pa lf lf) with x ≟ a
+... | yes _ = , lf
+... | no  _ = , nr a pa lf lf
+deleteB x (nb b pb (nb a pa al ar) br) = deleteR x (nr b pb (nb a pa al ar) br) 
+deleteB x (nb b pb (nr a pa al ar) br) with compare x b
+deleteB x (nb b pb (nr a pa al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr a pa al ar))
+... | (red , bl) = 
+deleteB x (nb b pb (nr a pa al ar) br) | tri> x<b x≈b x>b = {!!}
+deleteB x (nb b pb (nr a pa al ar) br) | tri≈ _ x≈b _ = {!!}
+-}
+
 delete' : ∀ {n β c} → A → Tree' β c (suc n)
   → (∃ λ c' → Tree' β c' (suc n)) ⊎ (∃ λ c' → Tree' β c' n)
-delete' x t = ?
+delete' x t = {!!}
 
 data Tree : Set where
   tree : ∀ {n} → Tree' [] black n → Tree
