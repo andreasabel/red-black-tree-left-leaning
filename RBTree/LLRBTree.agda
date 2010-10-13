@@ -1,4 +1,4 @@
-{-# OPTIONS --no-coverage-check #-}
+-- {-# OPTIONS --no-coverage-check #-}
 
 open import Level
 import Relation.Binary
@@ -656,13 +656,16 @@ deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri>
 
 -- delete root
 
+{- case root is a terminal 3-node -}
+deleteB x (nb d pd (nr b pb lf lf) lf) | tri≈ _ x≈d _ = false , nb b (proj₂ pb) lf lf
+
 {- case right son is a 2-node
        [d]
   (b)
 [a] [c]     [h]     call deleteMin (h)
           [f] [i]                [f] [i]
 -}
-deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈h _ with deleteMinR (nr h ph f i)
+deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈d _ with deleteMinR (nr h ph f i)
 ... | result = {!!}
 
 {- case right son is a 3-node
@@ -672,7 +675,7 @@ deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ 
           (f)        call deleteMin (f)
         [e] [g] [i]               [e] [g]
 -}
-deleteB x (nb d pd (nr b pb a c) (nb h ph (nr f pf e g) i)) | tri≈ _ x≈h _ with deleteMinR (nr f pf e g)
+deleteB x (nb d pd (nr b pb a c) (nb h ph (nr f pf e g) i)) | tri≈ _ x≈d _ with deleteMinR (nr f pf e g)
 ... | result = {!!}
 
 {-
