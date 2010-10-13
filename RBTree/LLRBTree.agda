@@ -1,4 +1,4 @@
-{-# OPTIONS #-}
+{-# OPTIONS --no-coverage-check #-}
 
 open import Level
 import Relation.Binary
@@ -243,7 +243,14 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3
       , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
 
 
+-- for saving t.c. time, replace deleteR by axiom
+
+postulate
+  deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
+
+{- BEGIN COMMENT FOR EFFICIENCY
 mutual
+
   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
 
   deleteR .{0} x (nr a pa lf lf) with x ≟ a
@@ -583,16 +590,22 @@ mutual
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph (nb g pg gl gr) i)
+-- END UNCOMMENT FOR EFF -}
+
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β} → A → Tree' β black (suc n) → ∃ λ z → Tree' β black (if z then n else (suc n))
+-- case terminal node
 deleteB x (nb a pa lf lf) with x ≟ a
 ... | yes _ = true , lf               -- shrunk (black height reduced)
 ... | no  _ = false , nb a pa lf lf   -- not shrunk (black height preserved)
+
+-- case 2-node: color red and call deleteR
 deleteB x (nb b pb (nb a pa al ar) br) with deleteR x (nr b pb (nb a pa al ar) br) 
 ... | red   , nr r pr rl rr = false , nb r pr rl rr -- red --> black
 ... | black , nb r pr rl rr = true  , nb r pr rl rr -- already black ==> shrunk
 
+-- case 3-node
 deleteB x (nb b pb (nr a pa al ar) br) with compare x b
 
 -- delete in left (red) subtree
@@ -603,11 +616,12 @@ deleteB x (nb b pb (nr a pa al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr 
 -- would delete in right (black) subtree, but it is a leaf
 deleteB x (nb b pb (nr a pa al ar) lf) | tri> x<b x≈b x>b =  
   false , (nb b pb (nr a pa al ar) lf)
+
 -- delete in right (black) subtree
-deleteB x (nb b pb (nr a pa al ar) (nb i pi il ir)) | tri> x<b x≈b x>b with (deleteB x (nb i pi il ir))
+deleteB x (nb h ph (nr b pb bl br) (nb i pi il ir)) | tri> x<h x≈h x>h with (deleteB x (nb i pi il ir))
 
 -- no shrinkage, just reassemble
-deleteB x (nb b pb (nr a pa al ar) (nb i pi il ir)) | tri> x<b x≈b x>b | false , r = false , nb b pb (nr a pa al ar) r 
+deleteB x (nb h ph (nr b pb bl br) (nb i pi il ir)) | tri> x<h x≈h x>h | false , r = false , nb h ph (nr b pb bl br) r 
 
 -- if there was shrinkage, we need to merge with right brother or parts of it
 {- case: right brother f is a 2-node 
@@ -617,7 +631,12 @@ deleteB x (nb b pb (nr a pa al ar) (nb i pi il ir)) | tri> x<b x≈b x>b | false
      [d]   [g]   [r]             [d] [g]  [r]
 -}
 deleteB x (nb h ph (nr b pb a (nb {leftSonColor = black} f pf d g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
-  false , (nb b ? a (nb h ? (nr f ? d g) r))
+  false , (nb b (proj₂ pb) 
+            (a ◁ keep skip ∎) 
+            (nb h (proj₁ pb , ph) 
+               (nr f pf d g ◁ swap ∎) 
+               (r ◁ coverR (proj₁ pb) ∎)))
+
 {- case: right brother f is a 3-node
              [h]                    [f]
    (b)                        (b)
@@ -626,27 +645,41 @@ deleteB x (nb h ph (nr b pb a (nb {leftSonColor = black} f pf d g)) (nb i pi il 
   [c] [e] [g]   [r]           [c] [e]  [g] [r] 
 -} 
 deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
-  false , (nb f ? (nr b ? a (nb d pd c e)) (nb h ? g r))
+  false , (nb f (proj₂ (proj₂ pf)) 
+            (nr b (proj₁ pf , proj₂ pb) 
+              (a ◁ swap (skip coverL (proj₁ pf) ∎)) 
+              (nb d pd c e ◁ swap (keep (keep skip ∎)))) 
+            (nb h (proj₁ (proj₂ pf) , ph) 
+              (g ◁ swap (skip (swap ∎))) 
+              (r ◁ coverR (proj₁ (proj₂ pf)) ∎)))
+
 
 -- delete root
-deleteB x (nb b pb (nr a pa al ar) br) | tri≈ _ x≈b _ = {!!}
+
+{- case right son is a 2-node
+       [d]
+  (b)
+[a] [c]     [h]     call deleteMin (h)
+          [f] [i]                [f] [i]
+-}
+deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈h _ with deleteMinR (nr h ph f i)
+... | result = {!!}
+
+{- case right son is a 3-node
+       [d]
+  (b)
+[a] [c]      [h]     
+          (f)        call deleteMin (f)
+        [e] [g] [i]               [e] [g]
+-}
+deleteB x (nb d pd (nr b pb a c) (nb h ph (nr f pf e g) i)) | tri≈ _ x≈h _ with deleteMinR (nr f pf e g)
+... | result = {!!}
 
 {-
-deleteB : ∀ {n β} → A → Tree' β black (suc n) → ∃ λ c' → Tree' β c' (ifRed c' n (suc n))
-deleteB x (nb a pa lf lf) with x ≟ a
-... | yes _ = , lf
-... | no  _ = , nr a pa lf lf
-deleteB x (nb b pb (nb a pa al ar) br) = deleteR x (nr b pb (nb a pa al ar) br) 
-deleteB x (nb b pb (nr a pa al ar) br) with compare x b
-deleteB x (nb b pb (nr a pa al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr a pa al ar))
-... | (red , bl) = 
-deleteB x (nb b pb (nr a pa al ar) br) | tri> x<b x≈b x>b = {!!}
-deleteB x (nb b pb (nr a pa al ar) br) | tri≈ _ x≈b _ = {!!}
--}
-
 delete' : ∀ {n β c} → A → Tree' β c (suc n)
   → (∃ λ c' → Tree' β c' (suc n)) ⊎ (∃ λ c' → Tree' β c' n)
 delete' x t = {!!}
+-}
 
 data Tree : Set where
   tree : ∀ {n} → Tree' [] black n → Tree
