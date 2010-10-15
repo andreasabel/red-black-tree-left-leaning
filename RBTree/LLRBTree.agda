@@ -165,12 +165,12 @@ makeBlack {black} t = t
 makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
 
 
-deleteMinR : ∀ {n β} → Tree' β red n -> ∃₂ λ x root → x is β × x is' leftOf root × (∃ λ c' → Tree' β c' n)
+deleteMinR : ∀ {n β} → Tree' β red n -> ∃ λ x → x is β × (∃ λ c' → Tree' β c' n)
 
 {-
    (a)       -->  .
  -}
-deleteMinR (nr a pa lf lf) = a , a , pa , ? , , lf
+deleteMinR (nr a pa lf lf) = a , pa , , lf
 
 {-
          (c)
