@@ -170,7 +170,7 @@ deleteMinR : ∀ {n β} → Tree' β red n -> ∃₂ λ x root → x is β × x 
 {-
    (a)       -->  .
  -}
-deleteMinR (nr a pa lf lf) = a , a , pa , ? , , lf
+deleteMinR (nr a pa lf lf) = a , a , pa , {!!} , , lf
 
 {-
          (c)
@@ -180,7 +180,7 @@ deleteMinR (nr a pa lf lf) = a , a , pa , ? , , lf
  -}
 deleteMinR (nr c pc (nb b pb (nr a pa t1 t2) t3) t4) 
   with deleteMinR (nr a pa t1 t2) 
-... | x , (x<b , x<c , px) , c' , ta' = x , px , , nr c pc (nb b pb ta' t3) t4
+... | x , _ , (x<b , x<c , px) , _ , c' , ta' = x , c , px , {!!} , , nr c pc (nb b pb ta' t3) t4
  
 {-
      (b)            (c)
@@ -188,14 +188,14 @@ deleteMinR (nr c pc (nb b pb (nr a pa t1 t2) t3) t4)
       (c)
  -}
 deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) (nr c (c<d , b<c , pc) lf lf) lf)) =
-   a , pa , , nr c pc (nb b (b<c , pb) lf lf) (nb d (c<d , pd) lf lf)
+   a , b , pa , {!!} , , nr c pc (nb b (b<c , pb) lf lf) (nb d (c<d , pd) lf lf)
 
 {-
      (b)             [d]
   [a]   [d]  -->  (b)
  -}
 deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) lf lf)) =
-   a , pa , , nb d pd (nr b (b<d , pb) lf lf) lf
+   a , b , pa , {!!} , , nb d pd (nr b (b<d , pb) lf lf) lf
 
 {-
       (b)                (c)
@@ -206,7 +206,7 @@ deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) lf lf)) =
 deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2)
                     (nb d (b<d , pd) (nr c (c<d , b<c , pc) t3 t4) t5)) 
   with deleteMinR (nr a pa (nb x1 px1 t1l t1r) t2) 
-... | x , (x<b , px) , c' , ta' = x , px , ,
+... | x , _ , (x<b , px) , _ , c' , ta' = x , b , px , {!!} , ,
   nr c pc
     (nb b (b<c , pb) (ta' ◁ coverL b<c ∎) (t3 ◁ swap skip swap ∎))
     (nb d (c<d , pd) (t4 ◁ swap keep keep skip ∎) (t5 ◁ swap skip coverR c<d ∎))
@@ -231,7 +231,7 @@ case 2:  deleteMinR a  returns red a':   color flip
 -}
 deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)) 
   with deleteMinR (nr a pa (nb x1 px1 t1l t1r) t2) 
-... | x , (x<b , px) , black , nb x1' (x1'<b , px1') t1l' t1r' = x , px , ,
+... | x , _ , (x<b , px) , _ , black , nb x1' (x1'<b , px1') t1l' t1r' = x , b , px , {!!} , ,
   nb d pd
     (nr b (b<d , pb)
       (nb x1' (x1'<b , trans x1'<b b<d , px1')
@@ -239,8 +239,8 @@ deleteMinR (nr b pb (nb a pa (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3
         (t1r' ◁ keep coverL b<d ∎))
       (nb x3 (b<x3 , x3<d , px3) (t3l ◁ keep swap ∎) (t3r ◁ keep swap ∎)))
     (t4 ◁ keep skip ∎)
-... | x , (x<b , px) , red   , nr a' pa' t1' t2' =
-      x , px , , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
+... | x , _ , (x<b , px) , _ , red   , nr a' pa' t1' t2' =
+      x , b , px , {!!} , , nr b pb (nb a' pa' t1' t2') (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)
 
 
 -- for saving t.c. time, replace deleteR by axiom
@@ -686,13 +686,13 @@ deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ 
 -}
 deleteB x (nb d pd (nr b pb a c) (nb h ph (nr f pf e g) i)) | tri≈ _ x≈d _ with deleteMinR (nr f pf e g)
 ... | result with deleteMinR (nr f pf e g)
-... | min , (min<h , d<min , pmin) , black , r = false , let r' = {!r ◁ ∎!}
-                                                             i' = (i ◁ swap skip coverR min<h ∎)
-                                                             h' = nb h {!!} r' i'
-                                                             b' = nr b pb a c ◁ coverL d<min (skip ∎)
+... | min , root , (min<h , d<min , pmin) , proot , black , r = false , let r' = {!r ◁ ∎!}
+                                                                            i' = (i ◁ swap skip coverR min<h ∎)
+                                                                            h' = nb h {!!} r' i'
+                                                                            b' = nr b pb a c ◁ coverL d<min (skip ∎)
                                                           in nb min pmin b' h'
 --nb min pmin (nr b pb a c ◁ coverL d<min (skip ∎)) {!nb h ph ? ? ◁ ∎!}
-... | min , (min<h , d<min , pmin) , red   , nr f' pf' e' g' = false , {!!}
+... | min , root , (min<h , d<min , pmin) , proot , red   , nr f' pf' e' g' = false , {!!}
 
 {-
 delete' : ∀ {n β c} → A → Tree' β c (suc n)
