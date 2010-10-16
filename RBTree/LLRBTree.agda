@@ -664,7 +664,10 @@ deleteB x (nb d pd (nr b pb lf lf) lf) | tri≈ _ x≈d _ = false , nb b (proj�
           [f] [i]                [f] [i]
 -}
 deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈d _ with deleteMinR (nr h ph f i)
-... | result = {!!} , {!!}
+... | min , black , (d<min , pmin) , r  = {!!}
+... | min , red   , (d<min , pmin) , nr r pr rl rr  = false , let r' = nb r pr rl rr ◁ keep skip ∎
+                                                                  b' = nr b pb a c ◁ coverL d<min (skip ∎)
+                                                              in nb min pmin b' r'
 
 {- case right son is a 3-node
        [d]
@@ -675,13 +678,11 @@ deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ 
 -}
 deleteB x (nb d pd (nr b pb a c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i)) | tri≈ _ x≈d _ with deleteMinR (nr f (f<h , d<f , pf) e g)
 ... | result with deleteMinR (nr f (f<h , d<f , pf) e g)
-... | min , black , (min<h , d<min , pmin) , r = false , let r' = (r ◁ swap keep keep skip ∎)
-                                                             i' = (i ◁ swap skip coverR min<h ∎)
-                                                             h' = nb h (min<h , ph) r' i'
-                                                             b' = nr b pb a c ◁ coverL d<min (skip ∎)
-                                                          in nb min pmin b' h'
---nb min pmin (nr b pb a c ◁ coverL d<min (skip ∎)) {!nb h ph ? ? ◁ ∎!}
-... | min , red , (min<h , d<min , pmin) , nr f' pf' e' g' = false , {!!}
+... | min , _ , (min<h , d<min , pmin) , r = false , let r' = (r ◁ swap keep keep skip ∎)
+                                                         i' = (i ◁ swap skip coverR min<h ∎)
+                                                         h' = nb h (min<h , ph) r' i'
+                                                         b' = nr b pb a c ◁ coverL d<min (skip ∎)
+                                                     in nb min pmin b' h'
 
 {-
 delete' : ∀ {n β c} → A → Tree' β c (suc n)
