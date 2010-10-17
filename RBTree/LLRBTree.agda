@@ -13,7 +13,7 @@ open module sto = StrictTotalOrder order
 
 A : Set
 A = StrictTotalOrder.Carrier order
-  
+
 open import Data.Unit hiding (_≟_)
 open import Data.Empty
 open import Data.Sum
@@ -26,7 +26,7 @@ open import Data.List
 data Bound : Set where
   leftOf  : A → Bound
   rightOf : A → Bound
-  
+
 Bounds = List Bound
 
 _is'_ : A → Bound → Set
@@ -62,7 +62,7 @@ data _⇒_ : Bounds → Bounds → Set where
 data Color : Set where
   red   : Color
   black : Color
-  
+
 data Tree' (β : Bounds) : Color → ℕ → Set where
   lf : Tree' β black 0
   nr : ∀ {n}(a : A) → a is β
@@ -93,7 +93,7 @@ data Type : Set where
   ok   : Type
   nrrl : Type
   nrrr : Type
-  
+
 data Almost (β : Bounds) : Type → ℕ → Set where
   ok   : ∀ {c n} → Tree' β c n → Almost β ok n
   nrrl : ∀ {n} → (a : A) → a is β
@@ -109,16 +109,16 @@ data TypeDel : Set where
 
 data AlmostDel (β : Bounds) : Type → ℕ → Set where
   ok   : ∀ {c n} → Tree' β c n → AlmostDel β ok n
---  nbrr 
+--  nbrr
 
 rotateLeft : ∀ {β n} → (b : A) → b is β
            → Tree' (leftOf b ∷ β) black n → Tree' (rightOf b ∷ β) red n
            → Tree' β black (suc n)
 rotateLeft b pb l (nr c (b<c , pc) rl rr)
-  = nb c pc 
-      (nr b (b<c , pb) 
+  = nb c pc
+      (nr b (b<c , pb)
         (l  ◁ coverL b<c ∎)
-        (rl ◁ swap ∎)) 
+        (rl ◁ swap ∎))
       (rr ◁ keep skip ∎)
 
 colorFlip : ∀ {β n} (b : A) → b is β
@@ -143,10 +143,10 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft' l
   where
     rotateLeft' : ∀ {β n} → Almost β nrrr n → Almost β nrrl n
     rotateLeft' (nrrr a pa l (nr b (a<b , pb) rl rr))
-      = nrrl b pb 
-          (nr a (a<b , pa) 
+      = nrrl b pb
+          (nr a (a<b , pa)
             (l  ◁ coverL a<b ∎)
-            (rl ◁ swap ∎)) 
+            (rl ◁ swap ∎))
           (rr ◁ keep skip ∎)
 ... | l' = rotateRightColorFlip a pa l' r
 
@@ -158,19 +158,19 @@ rotateLeftRotateRightColorFlip a pa l r with rotateLeft' l
 
 ifRed : ∀ {A} → Color → A → A → A
 ifRed red   a b = a
-ifRed black a b = b 
+ifRed black a b = b
 
 makeBlack : ∀ {c β n} → Tree' β c n → Tree' β black (ifRed c (suc n) n)
 makeBlack {black} t = t
 makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
 
 
-deleteMinR : ∀ {n β} → Tree' β red n → ∃₂ λ x c → x is β × Tree' (rightOf x ∷ β) c n
+extractMinR : ∀ {n β} → Tree' β red n → ∃₂ λ min c → min is β × Tree' (rightOf min ∷ β) c n
 
 {-
    (a)       -->  .
  -}
-deleteMinR (nr a pa lf lf) = a , black , pa , lf
+extractMinR (nr a pa lf lf) = a , black , pa , lf
 
 {-
          (c)
@@ -178,23 +178,23 @@ deleteMinR (nr a pa lf lf) = a , black , pa , lf
    (a)
   t1 t2 t3
  -}
-deleteMinR (nr c pc (nb b (b<c , pb) (nr a pa t1 t2) t3) t4) 
-  with deleteMinR (nr a pa t1 t2) 
+extractMinR (nr c pc (nb b (b<c , pb) (nr a pa t1 t2) t3) t4)
+  with extractMinR (nr a pa t1 t2)
 ... | x , c' , (x<b , x<c , px) , ta' = x , red , px , nr c (x<c , pc) (nb b (b<c , x<b , pb) (ta' ◁ swap keep swap ∎) (t3 ◁ coverR x<b (keep swap ∎))) (t4 ◁ coverR x<c ∎)
- 
+
 {-
      (b)            (c)
   [a]   [d]  -->  [b] [d]
       (c)
  -}
-deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) (nr c (c<d , b<c , pc) lf lf) lf)) =
+extractMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) (nr c (c<d , b<c , pc) lf lf) lf)) =
    a , red , pa , nr c (trans a<b b<c , pc) (nb b ((b<c , a<b , pb)) lf lf) (nb d (c<d , trans a<b b<d , pd) lf lf)
 
 {-
      (b)             [d]
   [a]   [d]  -->  (b)
  -}
-deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) lf lf)) =
+extractMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) lf lf)) =
    a , black , pa , nb d (trans a<b b<d , pd) (nr b (b<d , a<b , pb) lf lf) lf
 
 {-
@@ -203,9 +203,9 @@ deleteMinR (nr b pb (nb a (a<b , pa) lf lf) (nb d (b<d , pd) lf lf)) =
         (c)        (a)
  t1 t2 t3 t4 t5   t1 t2 t3 t4 t5     Note: t1 is black
 -}
-deleteMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2)
-                    (nb d (b<d , pd) (nr c (c<d , b<c , pc) t3 t4) t5)) 
-  with deleteMinR (nr a (a<b , pa) (nb x1 px1 t1l t1r) t2) 
+extractMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2)
+                    (nb d (b<d , pd) (nr c (c<d , b<c , pc) t3 t4) t5))
+  with extractMinR (nr a (a<b , pa) (nb x1 px1 t1l t1r) t2)
 ... | x , c' , (x<b , px) , ta' = x , red , px , nr c (trans x<b b<c , pc)
     (nb b (b<c , x<b , pb) (ta' ◁ swap coverL b<c ∎) (t3 ◁ swap skip swap coverR x<b (keep swap ∎)))
     (nb d (c<d , trans x<b b<d , pd) (t4 ◁ swap keep keep coverR x<b (skip ∎)) (t5 ◁ coverR c<d (keep keep coverR x<b (skip ∎))))
@@ -215,21 +215,21 @@ deleteMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2)
   [a]    [d]  -->    (a)   (d)
  t1 t2  t3 t4      t1 t2  t3 t4      Note: t1,t3 are black
 
-case 1:  deleteMinR a  returns black t1' (not a leaf!) : left rotate
+case 1:  extractMinR a  returns black t1' (not a leaf!) : left rotate
 
-    [b]              [d]    
+    [b]              [d]
   t1'   (d)  -->  (b)
        t3 t4    t1' t3  t4
 
-case 2:  deleteMinR a  returns red a':   color flip
+case 2:  extractMinR a  returns red a':   color flip
 
        [b]                (b)
     (a')    (d)   --> [a']    [d]
   t1' t2'  t3 t4     t1' t2' t3 t4
 
 -}
-deleteMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4)) 
-  with deleteMinR (nr a (a<b , pa) (nb x1 px1 t1l t1r) t2) 
+extractMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4))
+  with extractMinR (nr a (a<b , pa) (nb x1 px1 t1l t1r) t2)
 ... | x , black , (x<b , px) , nb x1' (x<x1' , x1'<b , px1') t1l' t1r' = x , black , px ,
   nb d (trans x<b b<d , pd)
     (nr b (b<d , x<b , pb)
@@ -304,15 +304,15 @@ mutual
   deleteCrawl x (nr d pd (nb b (b<d , pb) (nb a pa al ar) (nb c pc cl cr))
                         (nb f (d<f , pf) (nb e pe el er) (nb g pg gl gr)))
       | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd) (nb c pc cl cr ◁ swap (coverL d<f (keep swap ∎))) (nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}))
-  ... | red   , (nr r (b<r , r<f , pr) rl rr) = 
+  ... | red   , (nr r (b<r , r<f , pr) rl rr) =
            , nr r pr
                 (nb b (b<r , pb)
                   ((nb a pa al ar ◁ keep skip ∎) ◁ coverL b<r ∎)
                   (rl ◁ swap (keep (keep (skip ∎))) {- by agsy -}))
-                (nb f (r<f , pf {- by agsy -}) 
+                (nb f (r<f , pf {- by agsy -})
                   (rr ◁ swap (skip (swap ∎)) {- by agsy -})
                   ((nb g pg gl gr ◁ keep skip ∎) ◁ coverR r<f ∎))
-  ... | black , (nb r (b<r , r<f , pr) rl rr) = 
+  ... | black , (nb r (b<r , r<f , pr) rl rr) =
            , nb f pf
                 (nr b (trans b<d d<f , pb)
                   ((nb a pa al ar ◁ keep skip ∎) ◁ coverL (trans b<d d<f) ∎)
@@ -465,7 +465,7 @@ mutual
       | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd)
                                           ((c ◁ keep coverL d<f ∎) ◁ swap ∎)
                                           ((e ◁ keep skip coverR b<d ∎) ◁ swap keep swap ∎))
-  ... | red   , nr r (b<r , r<f , pr) rl rr = , 
+  ... | red   , nr r (b<r , r<f , pr) rl rr = ,
                                   let a' = nb a pa al ar ◁ coverL b<r (keep keep coverL d<f (skip ∎))
                                       rl' = rl ◁ swap ∎
                                       b' = nr b (b<r , trans b<d d<f , pb) a' rl'
@@ -543,7 +543,7 @@ mutual
                                     rr' = rr ◁ keep skip ∎
                                     a' = a ◁ coverL b<r (keep keep skip ∎)
                                     b' = nr b (b<r , b<f , pb) a' rl'
-                                    r' = nb r (r<f , pr) b' rr' 
+                                    r' = nb r (r<f , pr) b' rr'
                                  in nr f pf r' (nb h ph (nb g pg gl gr) i)
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
@@ -584,7 +584,7 @@ mutual
                                     rr' = rr ◁ keep skip ∎
                                     a' = a ◁ coverL b<r (keep keep skip ∎)
                                     b' = nr b (b<r , b<f , pb) a' rl'
-                                    r' = nb r (r<f , pr) b' rr' 
+                                    r' = nb r (r<f , pr) b' rr'
                                  in nr f pf r' (nb h ph (nb g pg gl gr) i)
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
@@ -599,7 +599,7 @@ deleteB x (nb a pa lf lf) with x ≟ a
 ... | no  _ = false , nb a pa lf lf   -- not shrunk (black height preserved)
 
 -- case 2-node: color red and call deleteR
-deleteB x (nb b pb (nb a pa al ar) br) with deleteR x (nr b pb (nb a pa al ar) br) 
+deleteB x (nb b pb (nb a pa al ar) br) with deleteR x (nr b pb (nb a pa al ar) br)
 ... | red   , nr r pr rl rr = false , nb r pr rl rr -- red --> black
 ... | black , nb r pr rl rr = true  , nb r pr rl rr -- already black ==> shrunk
 
@@ -608,47 +608,47 @@ deleteB x (nb b pb (nr a pa al ar) br) with compare x b
 
 -- delete in left (red) subtree
 deleteB x (nb b pb (nr a pa al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr a pa al ar))
--- ... | , nr r pr rl rr = false , nb b pb (nr r pr rl rr) br 
+-- ... | , nr r pr rl rr = false , nb b pb (nr r pr rl rr) br
 ... | _ , bl' = false , nb b pb bl' br -- whatever comes back, no shrinking
 
 -- would delete in right (black) subtree, but it is a leaf
-deleteB x (nb b pb (nr a pa al ar) lf) | tri> x<b x≈b x>b =  
+deleteB x (nb b pb (nr a pa al ar) lf) | tri> x<b x≈b x>b =
   false , (nb b pb (nr a pa al ar) lf)
 
 -- delete in right (black) subtree
 deleteB x (nb h ph (nr b pb bl br) (nb i pi il ir)) | tri> x<h x≈h x>h with (deleteB x (nb i pi il ir))
 
 -- no shrinkage, just reassemble
-deleteB x (nb h ph (nr b pb bl br) (nb i pi il ir)) | tri> x<h x≈h x>h | false , r = false , nb h ph (nr b pb bl br) r 
+deleteB x (nb h ph (nr b pb bl br) (nb i pi il ir)) | tri> x<h x≈h x>h | false , r = false , nb h ph (nr b pb bl br) r
 
 -- if there was shrinkage, we need to merge with right brother or parts of it
-{- case: right brother f is a 2-node 
+{- case: right brother f is a 2-node
              [h]              [b]
    (b)                     [a]         [h]
 [a]     [f]           --->         (f)
      [d]   [g]   [r]             [d] [g]  [r]
 -}
-deleteB x (nb h ph (nr b pb a (nb {leftSonColor = black} f pf d g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
-  false , (nb b (proj₂ pb) 
-            (a ◁ keep skip ∎) 
-            (nb h (proj₁ pb , ph) 
-               (nr f pf d g ◁ swap ∎) 
+deleteB x (nb h ph (nr b pb a (nb {leftSonColor = black} f pf d g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r =
+  false , (nb b (proj₂ pb)
+            (a ◁ keep skip ∎)
+            (nb h (proj₁ pb , ph)
+               (nr f pf d g ◁ swap ∎)
                (r ◁ coverR (proj₁ pb) ∎)))
 
 {- case: right brother f is a 3-node
              [h]                    [f]
    (b)                        (b)
 [a]     [f]           ---> [a]  [d]      [h]
-    (d)           
-  [c] [e] [g]   [r]           [c] [e]  [g] [r] 
--} 
-deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r = 
-  false , (nb f (proj₂ (proj₂ pf)) 
-            (nr b (proj₁ pf , proj₂ pb) 
-              (a ◁ swap (skip coverL (proj₁ pf) ∎)) 
-              (nb d pd c e ◁ swap (keep (keep skip ∎)))) 
-            (nb h (proj₁ (proj₂ pf) , ph) 
-              (g ◁ swap (skip (swap ∎))) 
+    (d)
+  [c] [e] [g]   [r]           [c] [e]  [g] [r]
+-}
+deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri> x<h x≈h x>h | true  , r =
+  false , (nb f (proj₂ (proj₂ pf))
+            (nr b (proj₁ pf , proj₂ pb)
+              (a ◁ swap (skip coverL (proj₁ pf) ∎))
+              (nb d pd c e ◁ swap (keep (keep skip ∎))))
+            (nb h (proj₁ (proj₂ pf) , ph)
+              (g ◁ swap (skip (swap ∎)))
               (r ◁ coverR (proj₁ (proj₂ pf)) ∎)))
 
 
@@ -657,27 +657,50 @@ deleteB x (nb h ph (nr b pb a (nb f pf (nr d pd c e) g)) (nb i pi il ir)) | tri>
 {- case root is a terminal 3-node -}
 deleteB x (nb d pd (nr b pb lf lf) lf) | tri≈ _ x≈d _ = false , nb b (proj₂ pb) lf lf
 
-{- case right son is a 2-node
-       [d]
+{- case right son is a 2-node, left-right grandchild is a 2-node
+         [d]
   (b)
-[a] [c]     [h]     call deleteMin (h)
-          [f] [i]                [f] [i]
+[a]  [c]      [h]     call extractMinR (h)
+  [cl] [cr] [f] [i]                  [f] [i]
 -}
-deleteB x (nb d pd (nr b pb a c) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈d _ with deleteMinR (nr h ph f i)
-... | min , black , (d<min , pmin) , r  = {!!}
+deleteB x (nb d pd (nr b (b<d , pb) a (nb {leftSonColor = black} c pc cl cr)) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈d _ with extractMinR (nr h ph f i)
+... | min , black , (d<min , pmin) , r  = false , let a' = a ◁ keep skip ∎
+                                                      c' = nr c pc cl cr ◁ swap ∎
+                                                      r' = r ◁ skip coverR b<d ∎
+                                                      d' = nb d (b<d , pd) c' r'
+                                                  in nb b pb a' d'
 ... | min , red   , (d<min , pmin) , nr r pr rl rr  = false , let r' = nb r pr rl rr ◁ keep skip ∎
-                                                                  b' = nr b pb a c ◁ coverL d<min (skip ∎)
+                                                                  b' = nr b (b<d , pb) a (nb c pc cl cr) ◁ coverL d<min (skip ∎)
+                                                              in nb min pmin b' r'
+
+{- case right son is a 2-node, left-right grandchild is a 3-node
+            [d]
+    (b)
+[a]     [c]       [h]     call extractMinR (h)
+    (cl)   [cr] [f] [i]                  [f] [i]
+[clr]  [crr]
+-}
+deleteB x (nb d pd (nr b (b<d , pb) a (nb c (b<c , c<d , pc) (nr cl pcl cll clr) cr)) (nb {leftSonColor = black} h ph f i)) | tri≈ _ x≈d _ with extractMinR (nr h ph f i)
+... | min , black , (d<min , pmin) , r  = false , let a' = a ◁ coverL b<c (keep keep skip ∎)
+                                                      cl' = nb cl pcl cll clr ◁ swap keep keep skip ∎
+                                                      b' = nr b (b<c , pb) a' cl'
+                                                      cr' = (cr ◁ swap keep swap ∎) ◁ skip ∎
+                                                      r'' = r ◁ swap coverR c<d (keep keep skip ∎)
+                                                      d' = nb d (c<d , pd) cr' r''
+                                                  in nb c pc b' d'
+... | min , red   , (d<min , pmin) , nr r pr rl rr  = false , let r' = nb r pr rl rr ◁ keep skip ∎
+                                                                  b' = nr b (b<d , pb) a (nb c (b<c , c<d , pc) (nr cl pcl cll clr) cr) ◁ coverL d<min (skip ∎)
                                                               in nb min pmin b' r'
 
 {- case right son is a 3-node
        [d]
   (b)
-[a] [c]      [h]     
-          (f)        call deleteMin (f)
+[a] [c]      [h]
+          (f)        call extractMinR (f)
         [e] [g] [i]               [e] [g]
 -}
-deleteB x (nb d pd (nr b pb a c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i)) | tri≈ _ x≈d _ with deleteMinR (nr f (f<h , d<f , pf) e g)
-... | result with deleteMinR (nr f (f<h , d<f , pf) e g)
+deleteB x (nb d pd (nr b pb a c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i)) | tri≈ _ x≈d _ with extractMinR (nr f (f<h , d<f , pf) e g)
+... | result with extractMinR (nr f (f<h , d<f , pf) e g)
 ... | min , _ , (min<h , d<min , pmin) , r = false , let r' = (r ◁ swap keep keep skip ∎)
                                                          i' = (i ◁ swap skip coverR min<h ∎)
                                                          h' = nb h (min<h , ph) r' i'
@@ -730,7 +753,7 @@ mutual
   insertR a pa (nr b pb l r) | tri> _ _ b<a with insertB a (b<a , pa) r
   ... | red   , r' = _ , nrrr b pb l r'
   ... | black , r' = _ , ok (nr b pb l r')
-  
+
 
 ------------------------------------------------------------------------
 
@@ -741,7 +764,7 @@ insert x (tree t) with insertB x tt t
 ... | black , lf          = tree lf
 
 fromList : List A → Tree
-fromList = foldr insert (tree lf) 
+fromList = foldr insert (tree lf)
 
 toList : Tree → List A
 toList (tree t) = toList' t
