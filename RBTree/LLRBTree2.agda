@@ -18,14 +18,6 @@ A = StrictTotalOrder.Carrier order
 BoundsL = List A
 BoundsR = List A
 
--- data Bounds : Set1 where
---   bounds : Rel A Level.zero → List A → Bounds
-
--- infix 5 _is_
--- _is_ : A → Bounds → Set
--- z is (bounds _ [])     = ⊤
--- z is (bounds _R_ (b ∷ β))  = z R b × z is (bounds _R_ β)
-
 infix 5 _isleftof_
 _isleftof_ : A → BoundsL → Set
 z isleftof []     = ⊤
@@ -36,13 +28,6 @@ _isrightof_ : A → BoundsR → Set
 z isrightof []     = ⊤
 z isrightof b ∷ γ  = b < z × z isrightof γ
 
--- _brel_<_ : Bounds → A → A → Set
--- _brel_<_ (bounds _R_ _) x y = x R y
-
--- infix 6 _∷b_
--- _∷b_ : A → Bounds → Bounds
--- x ∷b (bounds R l) = bounds R (x ∷ l)
-  
 infix 5 _⇒ˡ_
 data _⇒ˡ_ : BoundsL → BoundsL → Set where
   ∎      : ∀ {β} → β ⇒ˡ β
@@ -89,12 +74,6 @@ data Tree' (β : BoundsL) (γ : BoundsR) : Color → ℕ → Set where
   nb : ∀ {leftSonColor n}(a : A) → a isleftof β → a isrightof γ
      → Tree' (a ∷ β) γ leftSonColor n → Tree' β (a ∷ γ) black n
      → Tree' β γ black (suc n)
-
--- infix 3 _◁_◁_
--- _◁_◁_ : ∀ {β β' γ γ' c n} → Tree' β γ c n → β ⇒ˡ β' → γ ⇒ʳ γ' → Tree' β' γ' c n
--- lf          ◁ φ ◁ ψ = lf
--- nr x pxl pxr l r ◁ φ ◁ ψ = nr x (⟦ φ ⟧ˡ x pxl) (⟦ ψ ⟧ʳ x pxr) (l ◁ keep φ ◁ ψ) (r ◁ φ ◁ keep ψ)
--- nb x pxl pxr l r ◁ φ ◁ ψ = nb x (⟦ φ ⟧ˡ x pxl) (⟦ ψ ⟧ʳ x pxr) (l ◁ keep φ ◁ ψ) (r ◁ φ ◁ keep ψ)
 
 infixl 3 _◁_
 _◁_ : ∀ {β β' γ c n} → Tree' β γ c n → β ⇒ˡ β' → Tree' β' γ c n
