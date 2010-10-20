@@ -3,3 +3,5 @@ syntax: glob
 lib
 .*.agda.el
 *.agdai
+*~
+html
