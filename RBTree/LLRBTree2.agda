@@ -233,3 +233,26 @@ deleteB x (nb h phl phr (nr b (b<h , pbl) pbr a (nb f (f<h , pfl) (b<f , pfr) (n
                  (r ◀ cover f<h , ∎))
 
 
+-- delete root
+
+{- case root is a terminal 3-node -}
+deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr lf lf) lf) | tri≈ _ x≈d _ = false , nb b pbl pbr lf lf
+
+{- case right son is a 2-node, left-right grandchild is a 2-node
+         [d]
+  (b)
+[a]  [c]      [h]     call extractMinR (h)
+  [cl] [cr] [f] [i]                  [f] [i]
+-}
+deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr a (nb {leftSonColor = black} c pcl pcr cl cr)) (nb {leftSonColor = black} h phl phr f i)) | tri≈ _ x≈d _ with extractMinR (nr h phl phr f i)
+... | min , black , pmin , r  =
+  false , let a' = a ◁ keep skip ∎
+              c' =  nr c pcl pcr cl cr 
+              r'' = {! r ◁ ∎ !}
+              d' = nb d pdl (b<d , pdr) c' r''
+          in nb b pbl pbr a' d'
+... | min , red   , pmin , nr r prl prr rl rr  =
+  false , let r' = {! nb r prl prr rl rr ◁ ? ∎ !}
+              b' = {! nr b ? ? a (nb c pcl pcr cl cr) ◁ ∎ !}
+          in nb min pmin {!!} b' r'
+
