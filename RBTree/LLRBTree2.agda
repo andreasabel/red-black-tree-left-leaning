@@ -90,12 +90,17 @@ lf          ◀ φ = lf
 nr x pxl pxr l r ◀ φ = nr x pxl (⟦ φ ⟧ʳ x pxr) (l ◀ φ) (r ◀ keep φ)
 nb x pxl pxr l r ◀ φ = nb x pxl (⟦ φ ⟧ʳ x pxr) (l ◀ φ) (r ◀ keep φ)
 
-extractMinR : ∀ {n β γ} → Tree' β γ red n → ∃₂ λ min c → min isleftof β × Tree' β (min ∷ γ) c n
+-- for saving t.c. time, replace deleteR by axiom
+
+postulate
+  deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
+
+extractMinR : ∀ {n β γ} → Tree' β γ red n → ∃₂ λ min c → min isleftof β × min isrightof γ × Tree' β (min ∷ γ) c n
 
 {-
    (a)       -->  .
  -}
-extractMinR (nr a pal par lf lf) = a , black , pal , lf
+extractMinR (nr a pal par lf lf) = a , black , pal , par , lf
 
 {-
          (c)
@@ -105,7 +110,7 @@ extractMinR (nr a pal par lf lf) = a , black , pal , lf
  -}
 extractMinR (nr c pcl pcr (nb b (b<c , pb) pbr (nr a pal par t1 t2) t3) t4)
   with extractMinR (nr a pal par t1 t2)
-... | x , c' , (x<b , x<c , pxl) , ta' = x , red , pxl , nr c pcl (x<c , pcr) (nb b (b<c , pb) (x<b , pbr) (ta') (t3 ◀ cover x<b , ∎)) (t4 ◀ cover x<c , ∎)
+... | x , c' , (x<b , x<c , pxl) , pxr , ta' = x , red , pxl , pxr , nr c pcl (x<c , pcr) (nb b (b<c , pb) (x<b , pbr) (ta') (t3 ◀ cover x<b , ∎)) (t4 ◀ cover x<c , ∎)
 
 {-
      (b)            (c)
@@ -113,14 +118,14 @@ extractMinR (nr c pcl pcr (nb b (b<c , pb) pbr (nr a pal par t1 t2) t3) t4)
       (c)
  -}
 extractMinR (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (b<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)) =
-   a , red , pal , nr c pcl (trans a<b b<c , pcr) (nb b (b<c , pbl) (a<b , pbr) lf lf) (nb d pdl (c<d , trans a<b b<d , pdr) lf lf)
+   a , red , pal , par , nr c pcl (trans a<b b<c , pcr) (nb b (b<c , pbl) (a<b , pbr) lf lf) (nb d pdl (c<d , trans a<b b<d , pdr) lf lf)
 
 {-
      (b)             [d]
   [a]   [d]  -->  (b)
  -}
 extractMinR (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (b<d , pdr) lf lf)) =
-   a , black , pal , nb d pdl (trans a<b b<d , pdr) (nr b (b<d , pbl) (a<b , pbr) lf lf) lf
+   a , black , pal , par , nb d pdl (trans a<b b<d , pdr) (nr b (b<d , pbl) (a<b , pbr) lf lf) lf
 
 {-
       (b)                (c)
@@ -131,7 +136,7 @@ extractMinR (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (b<d , pdr) lf 
 extractMinR (nr b pbl pbr (nb a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2)
                     (nb d pdl (b<d , pdr) (nr c (c<d , pcl) (b<c , pcr) t3 t4) t5))
   with extractMinR (nr a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2)
-... | x , c' , (x<b , pxl) , ta' = x , red , pxl , nr c pcl (trans x<b b<c , pcr)
+... | x , c' , (x<b , pxl) , pxr , ta' = x , red , pxl , pxr , nr c pcl (trans x<b b<c , pcr)
     (nb b (b<c , pbl) (x<b , pbr) (ta' ◁ cover b<c , ∎) (t3 ◁ keep skip ∎ ◀ cover x<b , ∎))
     (nb d pdl (c<d , trans x<b b<d , pdr) (t4 ◀ keep cover x<b , skip ∎) (t5 ◀ cover c<d , keep keep cover x<b , skip ∎))
 
@@ -155,22 +160,18 @@ case 2:  extractMinR a  returns red a':   color flip
 -}
 extractMinR (nr b pbl pbr (nb a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2) (nb d pdl (b<d , pdr) (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r) t4))
   with extractMinR (nr a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2)
-... | x , black , (x<b , pxl) , nb x1' (x1'<b , px1'l) (x<x1' , px1'r) t1l' t1r' = x , black , pxl ,
+... | x , black , (x<b , pxl) , pxr , nb x1' (x1'<b , px1'l) (x<x1' , px1'r) t1l' t1r' = x , black , pxl , pxr ,
   nb d pdl (trans x<b b<d , pdr)
     (nr b (b<d , pbl) (x<b , pbr)
       (nb x1' (x1'<b , px1'l) (x<x1' , px1'r) t1l' t1r' ◁ cover b<d , ∎)
       (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r ◀ cover x<b , ∎))
     (t4 ◀ keep cover x<b , skip ∎)
-... | x , red , (x<b , pxl) , nr a' pal' par' t1' t2' =
-      x , red , pxl , nr b pbl (x<b , pbr) (nb a' pal' par' t1' t2') (nb d pdl (b<d , pdr) (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r) t4 ◀ cover x<b , ∎)
-
--- for saving t.c. time, replace deleteR by axiom
-
-postulate
-  deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
+... | x , red , (x<b , pxl) , pxr , nr a' pal' par' t1' t2' =
+      x , red , pxl , pxr , nr b pbl (x<b , pbr) (nb a' pal' par' t1' t2') (nb d pdl (b<d , pdr) (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r) t4 ◀ cover x<b , ∎)
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β γ} → A → Tree' β γ black (suc n) → ∃ λ z → Tree' β γ black (if z then n else (suc n))
+
 -- case terminal node
 deleteB x (nb a pal par lf lf) with x ≟ a
 ... | yes _ = true , lf                    -- shrunk (black height reduced)
@@ -232,7 +233,6 @@ deleteB x (nb h phl phr (nr b (b<h , pbl) pbr a (nb f (f<h , pfl) (b<f , pfr) (n
                  (g ◀ keep skip ∎)
                  (r ◀ cover f<h , ∎))
 
-
 -- delete root
 
 {- case root is a terminal 3-node -}
@@ -245,14 +245,14 @@ deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr lf lf) lf) | tri≈ _ x≈d _ = fa
   [cl] [cr] [f] [i]                  [f] [i]
 -}
 deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr a (nb {leftSonColor = black} c pcl pcr cl cr)) (nb {leftSonColor = black} h phl phr f i)) | tri≈ _ x≈d _ with extractMinR (nr h phl phr f i)
-... | min , black , pmin , r  =
+... | min , black , pminl , (d<min , pminr) , r  =
   false , let a' = a ◁ keep skip ∎
               c' =  nr c pcl pcr cl cr 
-              r'' = {! r ◁ ∎ !}
+              r'' = r ◀ skip cover b<d , ∎
               d' = nb d pdl (b<d , pdr) c' r''
           in nb b pbl pbr a' d'
-... | min , red   , pmin , nr r prl prr rl rr  =
-  false , let r' = {! nb r prl prr rl rr ◁ ? ∎ !}
-              b' = {! nr b ? ? a (nb c pcl pcr cl cr) ◁ ∎ !}
-          in nb min pmin {!!} b' r'
+... | min , red   , pminl , (d<min , pminr) , nr r prl prr rl rr  =
+  false , let r' = nb r prl prr rl rr ◀ keep skip ∎
+              b' = nr b (b<d , pbl) pbr a (nb c pcl pcr cl cr) ◁ cover d<min , skip ∎
+          in nb min pminl pminr b' r'
 
