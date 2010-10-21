@@ -1,12 +1,15 @@
+{-# OPTIONS --no-coverage-check #-}
+
+open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.List
 open import Data.Nat hiding (_≤_; _<_; _≟_; compare)
 open import Data.Product
-open import Data.Unit
+open import Data.Unit hiding (_≟_)
 
 open import Level
 
-import Relation.Binary
-open Relation.Binary hiding (_⇒_)
+open import Relation.Binary hiding (_⇒_)
+open import Relation.Nullary
 
 module LLRBTree2 (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
 
@@ -160,3 +163,22 @@ extractMinR (nr b pbl pbr (nb a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2) (n
     (t4 ◀ keep cover x<b , skip ∎)
 ... | x , red , (x<b , pxl) , nr a' pal' par' t1' t2' =
       x , red , pxl , nr b pbl (x<b , pbr) (nb a' pal' par' t1' t2') (nb d pdl (b<d , pdr) (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r) t4 ◀ cover x<b , ∎)
+
+-- for saving t.c. time, replace deleteR by axiom
+
+postulate
+  deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
+
+-- the returned bit z indicates whether the tree's black height has shrunk
+deleteB : ∀ {n β γ} → A → Tree' β γ black (suc n) → ∃ λ z → Tree' β γ black (if z then n else (suc n))
+-- case terminal node
+deleteB x (nb a pal par lf lf) with x ≟ a
+... | yes _ = true , lf                    -- shrunk (black height reduced)
+... | no  _ = false , nb a pal par lf lf   -- not shrunk (black height preserved)
+
+-- case 2-node: color red and call deleteR
+deleteB x (nb b pbl pbr (nb a pal par al ar) br)
+  with deleteR x (nr b pbl pbr (nb a pal par al ar) br)
+... | red   , nr r prl prr rl rr = false , nb r prl prr rl rr -- red --> black
+... | black , nb r prl prr rl rr = true  , nb r prl prr rl rr -- already black ==> shrunk
+
