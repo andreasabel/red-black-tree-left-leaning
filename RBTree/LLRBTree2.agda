@@ -182,3 +182,54 @@ deleteB x (nb b pbl pbr (nb a pal par al ar) br)
 ... | red   , nr r prl prr rl rr = false , nb r prl prr rl rr -- red --> black
 ... | black , nb r prl prr rl rr = true  , nb r prl prr rl rr -- already black ==> shrunk
 
+-- case 3-node
+deleteB x (nb b pbl pbr (nr a pal par al ar) br) with compare x b
+
+-- delete in left (red) subtree
+deleteB x (nb b pbl pbr (nr a pal par al ar) br) | tri< x<b x≈b x>b with (deleteR x (nr a pal par al ar))
+-- ... | , nr r pr rl rr = false , nb b pb (nr r pr rl rr) br
+... | _ , bl' = false , nb b pbl pbr bl' br -- whatever comes back, no shrinking
+
+-- would delete in right (black) subtree, but it is a leaf
+deleteB x (nb b pbl pbr (nr a pal par al ar) lf) | tri> x<b x≈b x>b =
+  false , (nb b pbl pbr (nr a pal par al ar) lf)
+
+-- delete in right (black) subtree
+deleteB x (nb h phl phr (nr b pbl pbr bl br) (nb i pil pir il ir)) | tri> x<h x≈h x>h
+  with (deleteB x (nb i pil pir il ir))
+
+-- no shrinkage, just reassemble
+deleteB x (nb h phl phr (nr b pbl pbr bl br) (nb i pil pir il ir)) | tri> x<h x≈h x>h | false , r =
+  false , nb h phl phr (nr b pbl pbr bl br) r
+
+-- if there was shrinkage, we need to merge with right brother or parts of it
+{- case: right brother f is a 2-node
+             [h]              [b]
+   (b)                     [a]         [h]
+[a]     [f]           --->         (f)
+     [d]   [g]   [r]             [d] [g]  [r]
+-}
+deleteB x (nb h phl phr (nr b (b<h , pbl) pbr a (nb {leftSonColor = black} f pfl pfr d g)) (nb i pil pir il ir)) | tri> x<h x≈h x>h | true  , r =
+  false , nb b pbl pbr
+             (a ◁ keep skip ∎)
+             (nb h phl (b<h , phr)
+                 (nr f pfl pfr d g ◁ ∎)
+                 (r ◀ cover b<h , ∎))
+
+{- case: right brother f is a 3-node
+             [h]                    [f]
+   (b)                        (b)
+[a]     [f]           ---> [a]  [d]      [h]
+    (d)
+  [c] [e] [g]   [r]           [c] [e]  [g] [r]
+-}
+deleteB x (nb h phl phr (nr b (b<h , pbl) pbr a (nb f (f<h , pfl) (b<f , pfr) (nr d pdl pdr c e) g)) (nb i pil pir il ir)) | tri> x<h x≈h x>h | true  , r =
+  false , nb f pfl pfr
+             (nr b (b<f , pbl) pbr
+                 (a ◁ cover b<f , keep keep skip ∎)
+                 (nb d pdl pdr c e ◁ keep skip ∎))
+             (nb h phl (f<h , phr)
+                 (g ◀ keep skip ∎)
+                 (r ◀ cover f<h , ∎))
+
+
