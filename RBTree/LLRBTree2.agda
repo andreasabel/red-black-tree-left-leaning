@@ -256,3 +256,39 @@ deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr a (nb {leftSonColor = black} c pcl
               b' = nr b (b<d , pbl) pbr a (nb c pcl pcr cl cr) ◁ cover d<min , skip ∎
           in nb min pminl pminr b' r'
 
+{- case right son is a 2-node, left-right grandchild is a 3-node
+            [d]
+    (b)
+[a]     [c]       [h]     call extractMinR (h)
+    (cl)   [cr] [f] [i]                  [f] [i]
+[clr]  [crr]
+-}
+deleteB x (nb d pdl pdr (nr b (b<d , pbl) pbr a (nb c (c<d , pcl) (b<c , pcr) (nr cl pcll pclr cll clr) cr)) (nb {leftSonColor = black} h phl phr f i)) | tri≈ _ x≈d _ with extractMinR (nr h phl phr f i)
+... | min , black , pminl , (d<min , pminr) , r  =
+  false , let a' = a ◁ cover b<c , keep keep skip ∎
+              cl' = nb cl pcll pclr cll clr ◁ keep skip ∎
+              b' =  nr b (b<c , pbl) pbr a' cl' 
+              cr' = cr ◀ keep skip ∎
+              r' = r ◀ skip cover c<d , ∎
+              d' =  nb d pdl (c<d , pdr) cr' r'
+          in nb c pcl pcr b' d'
+... | min , red   , pminl , (d<min , pminr) , nr r prl prr rl rr  =
+  false , let r' = nb r prl prr rl rr ◀ keep skip ∎
+              b' = nr b (b<d , pbl) pbr a (nb c (c<d , pcl) (b<c , pcr) (nr cl pcll pclr cll clr) cr) ◁ cover d<min , skip ∎
+          in nb min pminl pminr b' r'
+
+{- case right son is a 3-node
+       [d]
+  (b)
+[a] [c]      [h]
+          (f)        call extractMinR (f)
+        [e] [g] [i]               [e] [g]
+-}
+deleteB x (nb d pdl pdr (nr b pbl pbr a c) (nb h phl (d<h , phr) (nr f (f<h , pfl) (d<f , pfr) e g) i)) | tri≈ _ x≈d _ with extractMinR (nr f (f<h , pfl) (d<f , pfr) e g)
+... | result with extractMinR (nr f (f<h , pfl) (d<f , pfr) e g)
+... | min , _ , (min<h , pminl) , (d<min , pminr) , r =
+  false , let r' = r ◀ keep skip  ∎
+              i' = i ◀ cover min<h , keep keep skip ∎
+              h' =  nb h phl (min<h , phr) r' i' 
+              b' = nr b pbl pbr a c ◁ cover d<min , skip ∎
+          in nb min pminl pminr b' h'
