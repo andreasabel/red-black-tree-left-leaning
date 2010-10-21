@@ -244,10 +244,9 @@ extractMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (
 
 -- for saving t.c. time, replace deleteR by axiom
 
-postulate
-  deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
+-- postulate
+--   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
 
-{- BEGIN COMMENT FOR EFFICIENCY
 mutual
 
   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
@@ -589,7 +588,6 @@ mutual
   ... | black , r           = , let a' = a ◁ coverL b<f (keep skip skip ∎)
                                     b' = nb b (b<f , pb) a' r
                                  in nr f pf b' (nb h ph (nb g pg gl gr) i)
--- END UNCOMMENT FOR EFF -}
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β} → A → Tree' β black (suc n) → ∃ λ z → Tree' β black (if z then n else (suc n))
