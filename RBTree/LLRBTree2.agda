@@ -1,4 +1,4 @@
-{-# OPTIONS --no-coverage-check #-}
+-- {-# OPTIONS --no-coverage-check #-}
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.List
