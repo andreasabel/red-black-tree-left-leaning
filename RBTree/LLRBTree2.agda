@@ -1,4 +1,5 @@
 {-# OPTIONS --no-coverage-check #-}
+-- {-# OPTIONS --universe-polymorphism #-}
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.List
@@ -11,28 +12,50 @@ open import Level
 open import Relation.Binary hiding (_⇒_)
 open import Relation.Nullary
 
-module LLRBTree2 (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
+module LLRBTree2 
+  (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
+
+ℓ : Level
+ℓ = Level.zero
+
+Setℓ = Set -- Set ℓ
+
+{- Level-polymorphic
+module LLRBTree2 
+  {ℓ : Level}
+  (order : StrictTotalOrder ℓ ℓ ℓ) where
+
+-- Data.Unit.⊤ is not universe-polymorphic
+record ⊤ {a : Level} : Set a where
+  constructor tt
+-}
+
+{- TOO much trouble
+module LLRBTree2 
+  {c ℓ₁ ℓ₂ : Level}
+  (order : StrictTotalOrder c ℓ₁ ℓ₂) where
+-}
 
 open module sto = StrictTotalOrder order
 
-A : Set
+A : Setℓ
 A = StrictTotalOrder.Carrier order
 
 BoundsL = List A
 BoundsR = List A
 
 infix 5 _isleftof_
-_isleftof_ : A → BoundsL → Set
+_isleftof_ : A → BoundsL → Setℓ
 z isleftof []     = ⊤
 z isleftof b ∷ β  = z < b × z isleftof β
 
 infix 5 _isrightof_
-_isrightof_ : A → BoundsR → Set
+_isrightof_ : A → BoundsR → Setℓ
 z isrightof []     = ⊤
 z isrightof b ∷ γ  = b < z × z isrightof γ
 
 infix 5 _⇒ˡ_
-data _⇒ˡ_ : BoundsL → BoundsL → Set where
+data _⇒ˡ_ : BoundsL → BoundsL → Setℓ where
   ∎      : ∀ {β} → β ⇒ˡ β
   keep_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ b ∷ β'
   skip_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ β'
@@ -41,7 +64,7 @@ data _⇒ˡ_ : BoundsL → BoundsL → Set where
          → x ∷ β ⇒ˡ β'
 
 infix 5 _⇒ʳ_
-data _⇒ʳ_ : BoundsR → BoundsR → Set where
+data _⇒ʳ_ : BoundsR → BoundsR → Setℓ where
   ∎      : ∀ {γ} → γ ⇒ʳ γ
   keep_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ b ∷ γ'
   skip_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ γ'
@@ -69,7 +92,7 @@ data Color : Set where
   red   : Color
   black : Color
 
-data Tree' (β : BoundsL) (γ : BoundsR) : Color → ℕ → Set where
+data Tree' (β : BoundsL) (γ : BoundsR) : Color → ℕ → Setℓ where
   lf : Tree' β γ black 0
   nr : ∀ {n}(a : A) → a isleftof β → a isrightof γ
      → Tree' (a ∷ β) γ black n → Tree' β (a ∷ γ) black n
@@ -96,6 +119,8 @@ nb x pxl pxr l r ◀ φ = nb x pxl (⟦ φ ⟧ʳ x pxr) (l ◀ φ) (r ◀ keep �
 
 postulate
   deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
+-}
+
 
 extractMinR : ∀ {n β γ} → Tree' β γ red n → ∃₂ λ min c → min isleftof β × min isrightof γ × Tree' β (min ∷ γ) c n
 
@@ -170,6 +195,65 @@ extractMinR (nr b pbl pbr (nb a (a<b , pal) par (nb x1 px1l px1r t1l t1r) t2) (n
     (t4 ◀ keep cover x<b , skip ∎)
 ... | x , red , (x<b , pxl) , pxr , nr a' pal' par' t1' t2' =
       x , red , pxl , pxr , nr b pbl (x<b , pbr) (nb a' pal' par' t1' t2') (nb d pdl (b<d , pdr) (nb x3 (x3<d , px3l) (b<x3 , px3r) t3l t3r) t4 ◀ cover x<b , ∎)
+
+mutual
+
+  deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
+
+  deleteR .{0} x (nr a pal par lf lf) with x ≟ a
+  ... | yes _ = , lf
+  ... | no  _ = , nr a pal par lf lf
+
+  deleteR .{1} x (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)) with x ≟ a
+  ... | yes _ = , nb c pcl pcr (nr b (b<c , pbl) pbr lf lf) lf
+  ... | no  _ with x ≟ b
+  ... | yes _ = , nb c pcl pcr (nr a (trans a<b b<c , pal) par lf lf) lf
+  ... | no  _ with x ≟ c
+  ... | yes _ = , nb b pbl pbr (nr a (a<b , pal) par lf lf) lf
+  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
+
+  -- 1.5
+  deleteR .{1} x (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (b<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)) with x ≟ a
+  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb d pdl (c<d , pdr) lf lf)
+  ... | no  _ with x ≟ b
+  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb d pdl (c<d , pdr) lf lf)
+  ... | no  _ with x ≟ c
+  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) lf lf)
+  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
+
+  -- 1.6
+  deleteR .{1} x (nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , a<c , pal) par lf lf) lf) (nb d pdl (c<d , pdr) lf lf)) with  x ≟ a
+  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb d pdl (c<d , pdr) lf lf)
+  ... | no  _ with x ≟ b
+  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb d pdl (c<d , pdr) lf lf)
+  ... | no  _ with x ≟ c
+  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) lf lf)
+  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
+
+  deleteR .{1} x (nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , a<c , pal) par lf lf) lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)) with  x ≟ a
+  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)
+  ... | no  _ with x ≟ b
+  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)
+  ... | no  _ with x ≟ c
+  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)
+  ... | no  _ = , nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , trans a<b b<c , pal) par lf lf) lf) (nb e pel (trans c<d d<e , per) lf lf)
+
+
+  deleteR {suc (suc n)} x (nr a pal par l r) = deleteCrawl x (nr a pal par l r)
+
+  deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
+
+  -- 2.4
+  deleteCrawl x (nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
+                         (nb f pfl pfr (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
+  deleteCrawl x (nr d pdl pdr (nb b (b<d , pbl) pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
+                    (nb f pfl (d<f , pfr) (nb e pel per el er) (nb g pgl pgr gl gr)))
+      | tri≈ _ x≈d _ with deleteR x (nr d {!!} {!!} {!nb c ? ? cl cr ◁ swap (coverL d<f (keep swap ∎))!} {!nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}!})
+  ... | red   , (nr r prl prr rl rr) = {!!}
+
+
+
+
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β γ} → A → Tree' β γ black (suc n) → ∃ λ z → Tree' β γ black (if z then n else (suc n))
@@ -295,59 +379,4 @@ deleteB x (nb d pdl pdr (nr b pbl pbr a c) (nb h phl (d<h , phr) (nr f (f<h , pf
               b' = nr b pbl pbr a c ◁ cover d<min , skip ∎
           in nb min pminl pminr b' h'
 
--}
 
-mutual
-
-  deleteR : ∀ {n β γ} → A → Tree' β γ red n → ∃ λ c' → Tree' β γ c' n
-
-  deleteR .{0} x (nr a pal par lf lf) with x ≟ a
-  ... | yes _ = , lf
-  ... | no  _ = , nr a pal par lf lf
-
-  deleteR .{1} x (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)) with x ≟ a
-  ... | yes _ = , nb c pcl pcr (nr b (b<c , pbl) pbr lf lf) lf
-  ... | no  _ with x ≟ b
-  ... | yes _ = , nb c pcl pcr (nr a (trans a<b b<c , pal) par lf lf) lf
-  ... | no  _ with x ≟ c
-  ... | yes _ = , nb b pbl pbr (nr a (a<b , pal) par lf lf) lf
-  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
-
-  -- 1.5
-  deleteR .{1} x (nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (b<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)) with x ≟ a
-  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb d pdl (c<d , pdr) lf lf)
-  ... | no  _ with x ≟ b
-  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb d pdl (c<d , pdr) lf lf)
-  ... | no  _ with x ≟ c
-  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) lf lf)
-  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
-
-  -- 1.6
-  deleteR .{1} x (nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , a<c , pal) par lf lf) lf) (nb d pdl (c<d , pdr) lf lf)) with  x ≟ a
-  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb d pdl (c<d , pdr) lf lf)
-  ... | no  _ with x ≟ b
-  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb d pdl (c<d , pdr) lf lf)
-  ... | no  _ with x ≟ c
-  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) lf lf)
-  ... | no  _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb c pcl (b<c , pcr) lf lf)
-
-  deleteR .{1} x (nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , a<c , pal) par lf lf) lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)) with  x ≟ a
-  ... | yes _ = , nr c pcl pcr (nb b (b<c , pbl) pbr lf lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)
-  ... | no  _ with x ≟ b
-  ... | yes _ = , nr c pcl pcr (nb a (trans a<b b<c , pal) par lf lf) (nb e pel (c<e , per) (nr d (d<e , pdl) (c<d , pdr) lf lf) lf)
-  ... | no  _ with x ≟ c
-  ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)
-  ... | no  _ = , nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , trans a<b b<c , pal) par lf lf) lf) (nb e pel (trans c<d d<e , per) lf lf)
-
-
-  deleteR {suc (suc n)} x (nr a pal par l r) = deleteCrawl x (nr a pal par l r)
-
-  deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
-
-  -- 2.4
-  deleteCrawl x (nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
-                         (nb f pfl pfr (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
-  deleteCrawl x (nr d pdl pdr (nb b (b<d , pbl) pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
-                    (nb f pfl (d<f , pfr) (nb e pel per el er) (nb g pgl pgr gl gr)))
-      | tri≈ _ x≈d _ with deleteR x (nr d {!!} {!!} {!nb c ? ? cl cr ◁ swap (coverL d<f (keep swap ∎))!} {!nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}!})
-  ... | red   , (nr r prl prr rl rr) = {!!}

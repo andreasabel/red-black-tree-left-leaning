@@ -65,10 +65,10 @@ data Color : Set where
 
 data Tree' (β : Bounds) : Color → ℕ → Set where
   lf : Tree' β black 0
-  nr : ∀ {n}(a : A) → a is β
+  nr : ∀ {n}(a : A) → .(a is β)
      → Tree' (leftOf a ∷ β) black n → Tree' (rightOf a ∷ β) black n
      → Tree' β red n
-  nb : ∀ {leftSonColor n}(a : A) → a is β
+  nb : ∀ {leftSonColor n}(a : A) → .(a is β)
      → Tree' (leftOf a ∷ β) leftSonColor n → Tree' (rightOf a ∷ β) black n
      → Tree' β black (suc n)
 
