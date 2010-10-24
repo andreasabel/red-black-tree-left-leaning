@@ -249,7 +249,13 @@ mutual
   deleteCrawl x (nr d pdl pdr (nb b (b<d , pbl) pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
                     (nb f pfl (d<f , pfr) (nb e pel per el er) (nb g pgl pgr gl gr)))
       | tri≈ _ x≈d _ with deleteR x (nr d {!!} {!!} {!nb c ? ? cl cr ◁ swap (coverL d<f (keep swap ∎))!} {!nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}!})
-  ... | red   , (nr r prl prr rl rr) = {!!}
+  ... | red   , (nr r prl prr rl rr) = , let a' = {!!}
+                                             rl' = {!!}
+                                             b' = {!!}
+                                             rr' = {!!}
+                                             g' = {!!}
+                                             f' = {!!}
+                                         in nr r {!!} {!!} b' f'
 
 
 
