@@ -244,22 +244,84 @@ mutual
   deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
 
   -- 2.4
-  deleteCrawl x (nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
-                         (nb f pfl pfr (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
-  deleteCrawl x (nr d pdl pdr (nb b (b<d , pbl) pbr (nb a pal par al ar) (nb c pcl pcr cl cr))
-                    (nb f pfl (d<f , pfr) (nb e pel per el er) (nb g pgl pgr gl gr)))
-      | tri≈ _ x≈d _ with deleteR x (nr d {!!} {!!} {!nb c ? ? cl cr ◁ swap (coverL d<f (keep swap ∎))!} {!nb e pe el er ◁ swap coverR b<d ∎ {- by agsy -}!})
-  ... | red   , (nr r prl prr rl rr) = , let a' = {!!}
-                                             rl' = {!!}
-                                             b' = {!!}
-                                             rr' = {!!}
-                                             g' = {!!}
-                                             f' = {!!}
-                                         in nr r {!!} {!!} b' f'
+  deleteCrawl x (nr d pdl pdr
+                    (nb b pbl pbr
+                        (nb a pal par al ar) (nb c pcl pcr cl cr))
+                    (nb f pfl pfr
+                        (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
 
+{- EFF -}
+  -- 2.4.2
+  deleteCrawl x (nr d pdl pdr
+                    (nb b (b<d , pbl) pbr
+                        (nb a pal par al ar)
+                        (nb c (c<d , pcl) (b<c , pcr) cl cr))
+                    (nb f pfl (d<f , pfr)
+                        (nb e (e<f , pel) (d<e , per) el er)
+                        (nb g pgl pgr gl gr)))
+      | tri≈ _ x≈d _ with deleteR x (nr d (d<f , pdl) (b<d , pdr)
+                                        (nb c (c<d , pcl) (b<c , pcr) cl cr ◁ cover d<f , ∎)
+                                        (nb e (e<f , pel) (d<e , per) el er ◀ cover b<d , ∎))
+  ... | red   , nr r (r<f , prl) (b<r , prr) rl rr = ,
+    let a' = nb a pal par al ar ◁ cover b<r , keep keep skip ∎
+        rl' = rl ◁ keep skip ∎
+        b' = nb b (b<r , pbl) pbr a' rl'
+        rr' = rr ◀ keep skip ∎
+        g' = nb g pgl pgr gl gr ◀ cover r<f ,  keep keep skip ∎
+        f' = nb f pfl (r<f , pfr) rr' g'
+    in nr r prl prr b' f'
+  ... | black , r = ,
+    let a' = nb a pal par al ar ◁ keep cover d<f , skip ∎
+        b' = nr b (trans b<d d<f , pbl) pbr a' r
+        g' = nb g pgl pgr gl gr ◀ keep skip ∎
+    in nb f pfl pfr b' g'
 
+  -- 2.4.1
+  deleteCrawl x (nr d pdl pdr
+                    (nb b pbl pbr
+                        (nb a pal par al ar)
+                        (nb c pcl pcr cl cr))
+                    (nb f pfl (d<f , pfr)
+                        (nb e pel per el er)
+                        (nb g pgl pgr gl gr)))
+      | tri< x<d ̸x≈d ̸x>d with deleteR x (nr b pbl pbr
+                                                (nb a pal par al ar)
+                                                (nb c pcl pcr cl cr))
+  ... | red   , (nr r prl prr rl rr) = , nr d pdl pdr
+                                            (nb r prl prr rl rr)
+                                            (nb f pfl (d<f , pfr)
+                                                (nb e pel per el er)
+                                                (nb g pgl pgr gl gr))
+  ... | black , r = ,
+    let r' = r ◁ cover d<f , ∎
+        d' = nr d (d<f , pdl) pdr r' (nb e pel per el er)
+        g' = nb g pgl pgr gl gr ◀ keep skip ∎
+    in nb f pfl pfr d' g'
 
+  -- 2.4.3
+  deleteCrawl x (nr d pdl pdr
+                    (nb b pbl pbr
+                        (nb a pal par al ar)
+                        (nb c pcl pcr cl cr))
+                    (nb f pfl (d<f , pfr)
+                        (nb e pel per el er)
+                        (nb g pgl pgr gl gr)))
+      | tri> _ _ x>d with deleteR x (nr f pfl (d<f , pfr)
+                                        (nb e pel per el er)
+                                        (nb g pgl pgr gl gr))
+  ... | red   , nr r prl prr rl rr = , nr d pdl pdr
+                                          (nb b pbl pbr
+                                              (nb a pal par al ar)
+                                              (nb c pcl pcr cl cr))
+                                          (nb r prl prr rl rr)
+  ... | black , nb r prl prr rl rr = , nb d pdl pdr
+                                          (nr b pbl pbr
+                                              (nb a pal par al ar)
+                                              (nb c pcl pcr cl cr))
+                                          (nb r prl prr rl rr)
+{- EFF -}
 
+{- EFF
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β γ} → A → Tree' β γ black (suc n) → ∃ λ z → Tree' β γ black (if z then n else (suc n))
@@ -386,3 +448,4 @@ deleteB x (nb d pdl pdr (nr b pbl pbr a c) (nb h phl (d<h , phr) (nr f (f<h , pf
           in nb min pminl pminr b' h'
 
 
+EFF -}
