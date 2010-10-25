@@ -623,6 +623,53 @@ EFF -}
       | tri< x<d _ _ with deleteR x (nr b pbl pbr a c)
   ... | _ , r = , nr f pfl pfr (nb d pdl pdr r e) (nb h phl phr (nb g pgl pgr gl gr) i)
 
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b pbl pbr a c)
+                        e)
+                    (nb h phl phr
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri> _ _ x>d with compare x f
+
+  -- 2.1.2
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b (b<d , b<f , pbl) pbr a c)
+                        e)
+                    (nb h phl phr
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d pdl (b<d , pdr)
+                                                         c
+                                                         (e ◀ cover b<d , ∎))
+  ... | red , nr r (r<f , prl) (b<r , prr) rl rr = ,
+    let rr' = rr ◀ keep skip ∎
+        a'  = a ◁ cover b<r , keep keep skip ∎
+        b'  = nr b (b<r , b<f , pbl) pbr a' rl
+        r'  = nb r (r<f , prl) prr b' rr'
+    in nr f pfl pfr r' (nb h phl phr (nb g pgl pgr gl gr) i)
+  ... | black , r = ,
+    let a' = a ◁ cover b<f , keep skip skip ∎
+        b' = nb b (b<f , pbl) pbr a' r
+    in nr f pfl pfr b' (nb h phl phr (nb g pgl pgr gl gr) i)
+
+  -- 2.1.3
+  deleteCrawl x (nr f pfl pfr
+                    (nb d (d<f , pdl) pdr
+                        (nr b (b<d , b<f , pbl) pbr a c)
+                        e)
+                    (nb h phl (f<h , phr)
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f (f<h , pfl) (d<f , pfr)
+                                                         (e ◁ cover f<h , ∎)
+                                                         (nb g pgl pgr gl gr ◀ cover d<f , ∎))
+  ... | _ , r = ,
+    let b' = nb b (b<d , b<f , pbl) pbr a c ◁ keep skip ∎
+        i' = i ◀ keep cover d<f , skip ∎
+        h' = nb h phl (trans d<f f<h , phr) r i'
+    in nr d pdl pdr b' h'
 
 
 {- EFF
