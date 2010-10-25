@@ -238,20 +238,15 @@ mutual
   ... | yes _ = , nr b pbl pbr (nb a (a<b , pal) par lf lf) (nb d pdl (trans b<c c<d , pdr) (nr c (c<d , pcl) (b<c , pcr) lf lf) lf)
   ... | no  _ = , nr c pcl pcr (nb b (b<c , pbl) pbr (nr a (a<b , trans a<b b<c , pal) par lf lf) lf) (nb e pel (trans c<d d<e , per) lf lf)
 
-
-  deleteR {suc (suc n)} x (nr a pal par l r) = deleteCrawl x (nr a pal par l r)
-
-  deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
-
   -- 2.4
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar) (nb c pcl pcr cl cr))
                     (nb f pfl pfr
                         (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
 
   -- 2.4.2
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b (b<d , pbl) pbr
                         (nb a pal par al ar)
                         (nb c (c<d , pcl) (b<c , pcr) cl cr))
@@ -276,7 +271,7 @@ mutual
     in nb f pfl pfr b' g'
 
   -- 2.4.1
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         (nb c pcl pcr cl cr))
@@ -298,7 +293,7 @@ mutual
     in nb f pfl pfr d' g'
 
   -- 2.4.3
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         (nb c pcl pcr cl cr))
@@ -320,7 +315,7 @@ mutual
                                           (nb r prl prr rl rr)
 
   -- 2.3
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b pbl pbr a c)
                         e)
@@ -329,7 +324,7 @@ mutual
                         k)) with compare x d
 
   -- 2.3.1
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b pbl pbr a c)
                         e)
@@ -340,7 +335,7 @@ mutual
   ... | _ , r = , nr f pfl pfr (nb d pdl pdr r e) (nb j pjl pjr (nr h phl phr g i) k)
 
   -- 2.3.2a
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d (d<f , pdl) pdr
                           (nr b (b<d , b<f , pbl) pbr a c)
                           e)
@@ -359,7 +354,7 @@ mutual
         r' = nb r (r<f , prl) prr b' rr' 
     in nr f pfl pfr r' (nb j pjl pjr (nr h phl phr g i) k)
 
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                           (nr b pbl pbr a c)
                           e)
@@ -369,7 +364,7 @@ mutual
       | tri> _ _ x>d with compare x f
 
   -- 2.3.2b
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d (d<f , pdl) pdr
                           (nr b (b<d , b<f , pbl) pbr a c)
                           e)
@@ -391,7 +386,7 @@ mutual
     in nr f pfl pfr r' (nb j pjl pjr (nr h phl phr g i) k)
 
   -- 2.3.3
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                       (nb d (d<f , pdl) pdr
                             (nr b (b<d , b<f , pbl) pbr a c)
                             e)
@@ -421,7 +416,7 @@ mutual
         d'  = nb d (d<r , pdl) pdr b' rl'
     in nr r prl prr d' j'
 
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                           (nr b pbl pbr a c)
                           e)
@@ -431,7 +426,7 @@ mutual
       | tri> _ _ x>d | tri> _ _ x>f with compare x j
 
   -- 2.3.4
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                           (nr b pbl pbr a c)
                           e)
@@ -442,7 +437,7 @@ mutual
   ... | _ , r = , nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) (nb j pjl pjr r k)
 
   -- 2.3.5a
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                           (nr b pbl pbr a c)
                           e)
@@ -464,7 +459,7 @@ mutual
     in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) h'
 
   -- 2.3.5b
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                           (nr b pbl pbr a c)
                           e)
@@ -486,7 +481,7 @@ mutual
     in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) h'
 
   -- 2.2
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -494,7 +489,7 @@ mutual
                         (nr f pfl pfr e g) i)) with compare x d
 
   -- 2.2.1
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -514,7 +509,7 @@ mutual
     in nr f pfl pfr d' h'
 
   -- 2.2.2
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b (b<d , pbl) pbr
                         (nb a pal par al ar)
                         c)
@@ -541,7 +536,7 @@ mutual
         h' = nb h phl (f<h , phr) g' i'
     in nr f pfl pfr b' h'
 
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -550,7 +545,7 @@ mutual
       | tri> _ _ x>d with compare x h
 
   -- 2.2.3
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -560,7 +555,7 @@ mutual
   ... | _ , r = , nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) (nb h phl phr r i)
 
   -- 2.2.4a
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -581,7 +576,7 @@ mutual
     in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) f'
 
   -- 2.2.4b
-  deleteCrawl x (nr d pdl pdr
+  deleteR x (nr d pdl pdr
                     (nb b pbl pbr
                         (nb a pal par al ar)
                         c)
@@ -602,7 +597,7 @@ mutual
     in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) f'
 
   -- 2.1
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b pbl pbr a c)
                         e)
@@ -611,7 +606,7 @@ mutual
                         i)) with compare x d
 
   -- 2.1.1
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b pbl pbr a c)
                         e)
@@ -621,7 +616,7 @@ mutual
       | tri< x<d _ _ with deleteR x (nr b pbl pbr a c)
   ... | _ , r = , nr f pfl pfr (nb d pdl pdr r e) (nb h phl phr (nb g pgl pgr gl gr) i)
 
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b pbl pbr a c)
                         e)
@@ -631,7 +626,7 @@ mutual
       | tri> _ _ x>d with compare x f
 
   -- 2.1.2
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b (b<d , b<f , pbl) pbr a c)
                         e)
@@ -653,7 +648,7 @@ mutual
     in nr f pfl pfr b' (nb h phl phr (nb g pgl pgr gl gr) i)
 
   -- 2.1.3
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d (d<f , pdl) pdr
                         (nr b (b<d , b<f , pbl) pbr a c)
                         e)
@@ -670,7 +665,7 @@ mutual
     in nr d pdl pdr b' h'
 
   -- 2.1.4
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d (d<f , pdl) pdr
                         (nr b (b<d , b<f , pbl) pbr a c)
                         e)
@@ -693,7 +688,7 @@ mutual
         f' = nb f pfl (d<f , pfr) e r
     in nr d pdl pdr b' f'
 
-  deleteCrawl x (nr f pfl pfr
+  deleteR x (nr f pfl pfr
                     (nb d pdl pdr
                         (nr b (b<d , b<f , pbl) pbr a c)
                         e)
