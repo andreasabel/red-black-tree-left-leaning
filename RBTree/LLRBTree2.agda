@@ -603,6 +603,28 @@ EFF -}
         f' = nb f pfl (d<f , pfr) e' r
     in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) f'
 
+  -- 2.1
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b pbl pbr a c)
+                        e)
+                    (nb h phl phr
+                        (nb g pgl pgr gl gr)
+                        i)) with compare x d
+
+  -- 2.1.1
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b pbl pbr a c)
+                        e)
+                    (nb h phl phr
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri< x<d _ _ with deleteR x (nr b pbl pbr a c)
+  ... | _ , r = , nr f pfl pfr (nb d pdl pdr r e) (nb h phl phr (nb g pgl pgr gl gr) i)
+
+
+
 {- EFF
 
 -- the returned bit z indicates whether the tree's black height has shrunk
