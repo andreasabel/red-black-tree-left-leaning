@@ -443,6 +443,52 @@ EFF -}
       | tri> _ _ x>d | tri> _ _ x>f | tri< x<j _ _ with deleteR x (nr h phl phr g i)
   ... | _ , r = , nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) (nb j pjl pjr r k)
 
+  -- 2.3.5a
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                          (nr b pbl pbr a c)
+                          e)
+                    (nb j pjl (f<j , pjr)
+                          (nr h (h<j , phl) (f<h , phr) g i)
+                          k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri≈ _ x≈j _ with deleteR x (nr j pjl (h<j , f<j , pjr)
+                                                                        i
+                                                                        (k ◀ cover h<j , ∎))
+  ... | red   , nr r prl (h<r , f<r , prr) rl rr = ,
+    let rr' = rr ◀ keep skip ∎
+        g'  = g ◁ cover h<r , keep keep skip ∎
+        h'  = nr h (h<r , phl) (f<h , phr) g' rl
+        r'  = nb r prl (f<r , prr) h' rr'
+    in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) r'
+  ... | black , r = ,
+    let g' = g ◁ keep skip ∎
+        h' = nb h phl (f<h , phr) g' r
+    in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) h'
+
+  -- 2.3.5b
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                          (nr b pbl pbr a c)
+                          e)
+                    (nb j pjl (f<j , pjr)
+                          (nr h (h<j , phl) (f<h , phr) g i)
+                          k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri> _ _ x>j with deleteR x (nr j pjl (h<j , f<j , pjr)
+                                                                        i
+                                                                        (k ◀ cover h<j , ∎))
+  ... | red   , nr r prl (h<r , f<r , prr) rl rr = ,
+    let rr' = rr ◀ keep skip ∎
+        g'  = g ◁ cover h<r , keep keep skip ∎
+        h'  = nr h (h<r , phl) (f<h , phr) g' rl
+        r'  = nb r prl (f<r , prr) h' rr'
+    in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) r'
+  ... | black , r = ,
+    let g' = g ◁ keep skip ∎
+        h' = nb h phl (f<h , phr) g' r
+    in nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) h'
+
+
+
 {- EFF
 
 -- the returned bit z indicates whether the tree's black height has shrunk
