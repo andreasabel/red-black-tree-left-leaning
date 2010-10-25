@@ -561,6 +561,48 @@ EFF -}
       | tri> _ _ x>d | tri< x<h _ _ with deleteR x (nr f pfl pfr e g)
   ... | _ , r = , nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) (nb h phl phr r i)
 
+  -- 2.2.4a
+  deleteCrawl x (nr d pdl pdr
+                    (nb b pbl pbr
+                        (nb a pal par al ar)
+                        c)
+                    (nb h phl phr
+                        (nr f (f<h , pfl) (d<f , pfr) e g) i))
+      | tri> _ _ x>d | tri≈ _ x≈h _ with deleteR x (nr h phl (f<h , phr)
+                                                         g
+                                                         (i ◀ cover f<h , ∎))
+  ... | red   , nr r prl (f<r , d<r , prr) rl rr = ,
+    let e'  = e ◁ cover f<r , keep keep skip ∎
+        f'  = nr f (f<r , pfl) (d<f , pfr) e' rl
+        rr' = rr ◀ keep skip ∎
+        r'  = nb r prl (d<r , prr) f' rr'
+    in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) r'
+  ... | black , r = ,
+    let e' = e ◁ keep skip ∎
+        f' = nb f pfl (d<f , pfr) e' r
+    in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) f'
+
+  -- 2.2.4b
+  deleteCrawl x (nr d pdl pdr
+                    (nb b pbl pbr
+                        (nb a pal par al ar)
+                        c)
+                    (nb h phl phr
+                        (nr f (f<h , pfl) (d<f , pfr) e g) i))
+      | tri> _ _ x>d | tri> _ _ x>h with deleteR x (nr h phl (f<h , phr)
+                                                         g
+                                                         (i ◀ cover f<h , ∎))
+  ... | red   , nr r prl (f<r , d<r , prr) rl rr = ,
+    let e'  = e ◁ cover f<r , keep keep skip ∎
+        f'  = nr f (f<r , pfl) (d<f , pfr) e' rl
+        rr' = rr ◀ keep skip ∎
+        r'  = nb r prl (d<r , prr) f' rr'
+    in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) r'
+  ... | black , r = ,
+    let e' = e ◁ keep skip ∎
+        f' = nb f pfl (d<f , pfr) e' r
+    in nr d pdl pdr (nb b pbl pbr (nb a pal par al ar) c) f'
+
 {- EFF
 
 -- the returned bit z indicates whether the tree's black height has shrunk
