@@ -1,4 +1,4 @@
-{-# OPTIONS --no-coverage-check #-}
+-- {-# OPTIONS --no-coverage-check #-}
 -- {-# OPTIONS --universe-polymorphism #-}
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
@@ -243,7 +243,6 @@ mutual
 
   deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
 
-{- EFF
   -- 2.4
   deleteCrawl x (nr d pdl pdr
                     (nb b pbl pbr
@@ -319,7 +318,6 @@ mutual
                                               (nb a pal par al ar)
                                               (nb c pcl pcr cl cr))
                                           (nb r prl prr rl rr)
-EFF -}
 
   -- 2.3
   deleteCrawl x (nr f pfl pfr
@@ -671,8 +669,52 @@ EFF -}
         h' = nb h phl (trans d<f f<h , phr) r i'
     in nr d pdl pdr b' h'
 
+  -- 2.1.4
+  deleteCrawl x (nr f pfl pfr
+                    (nb d (d<f , pdl) pdr
+                        (nr b (b<d , b<f , pbl) pbr a c)
+                        e)
+                    (nb h phl (f<h , phr)
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri> _ _ x>d | tri> _ _ x>f with deleteR x (nr h phl (f<h , phr)
+                                                       (nb g pgl pgr gl gr)
+                                                       i
+                                                   ◀ cover d<f , ∎)
+  ... | red , nr r prl (f<r , d<r , prr) rl rr = ,
+    let b'  = nb b (b<d , b<f , pbl) pbr a c ◁ keep skip ∎
+        e'  = e ◁ cover f<r , ∎
+        f'  = nr f (f<r , pfl) (d<f , pfr) e' rl
+        rr' = rr ◀ keep skip ∎
+        r'  = nb r prl (d<r , prr) f' rr'
+    in nr d pdl pdr b' r'
+  ... | black , r = ,
+    let b' = nb b (b<d , b<f , pbl) pbr a c ◁ keep skip ∎
+        f' = nb f pfl (d<f , pfr) e r
+    in nr d pdl pdr b' f'
 
-{- EFF
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b (b<d , b<f , pbl) pbr a c)
+                        e)
+                    (nb h phl phr
+                        (nb g pgl pgr gl gr)
+                        i))
+      | tri≈ _ x≈d _ with deleteR x (nr d pdl (b<d , pdr)
+                                        c
+                                        (e ◀ cover b<d , ∎))
+  ... | red , nr r (r<f , prl) (b<r , prr) rl rr = ,
+    let rr' = rr ◀ keep skip ∎
+        a'  = a ◁ cover b<r , keep keep skip ∎
+        b'  = nr b (b<r , b<f , pbl) pbr a' rl
+        r'  = nb r (r<f , prl) prr b' rr'
+    in nr f pfl pfr r' (nb h phl phr (nb g pgl pgr gl gr) i)
+  ... | black , r = ,
+    let a' = a ◁ cover b<f , keep skip skip ∎
+        b' = nb b (b<f , pbl) pbr a' r
+    in nr f pfl pfr b' (nb h phl phr (nb g pgl pgr gl gr) i)
+
+
 
 -- the returned bit z indicates whether the tree's black height has shrunk
 deleteB : ∀ {n β γ} → A → Tree' β γ black (suc n) → ∃ λ z → Tree' β γ black (if z then n else (suc n))
@@ -799,4 +841,3 @@ deleteB x (nb d pdl pdr (nr b pbl pbr a c) (nb h phl (d<h , phr) (nr f (f<h , pf
           in nb min pminl pminr b' h'
 
 
-EFF -}
