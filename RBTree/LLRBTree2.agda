@@ -361,6 +361,15 @@ EFF -}
         r' = nb r (r<f , prl) prr b' rr' 
     in nr f pfl pfr r' (nb j pjl pjr (nr h phl phr g i) k)
 
+  deleteCrawl x (nr f pfl pfr
+                    (nb d (d<f , pdl) pdr
+                          (nr b (b<d , b<f , pbl) pbr a c)
+                          e)
+                    (nb j pjl pjr
+                          (nr h phl phr g i)
+                          k))
+      | tri> _ _ x>d with compare x f
+
   -- 2.3.2b
   deleteCrawl x (nr f pfl pfr
                     (nb d (d<f , pdl) pdr
@@ -369,7 +378,9 @@ EFF -}
                     (nb j pjl pjr
                           (nr h phl phr g i)
                           k))
-      | tri> _ _ x>d with deleteR x (nr d (d<f , pdl) (b<d , pdr) c ( e ◀ cover b<d , ∎ ))
+      | tri> _ _ x>d | tri< x<f _ _ with deleteR x (nr d (d<f , pdl) (b<d , pdr)
+                                                         c
+                                                         (e ◀ cover b<d , ∎))
   ... | black  , r = ,
     let a' = a ◁ keep skip ∎
         b' =  nb b (trans b<d d<f , pbl) pbr a' r 
@@ -381,6 +392,19 @@ EFF -}
         r' = nb r (r<f , prl) prr b' rr' 
     in nr f pfl pfr r' (nb j pjl pjr (nr h phl phr g i) k)
 
+  -- 2.3.3
+  deleteCrawl x (nr f pfl pfr
+                      (nb d (d<f , pdl) pdr
+                            (nr b (b<d , b<f , pbl) pbr a c)
+                            e)
+                      (nb j pjl (f<j , pjr)
+                          (nr h (h<j , phl) (f<h , phr) g i)
+                          k))
+      | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f (f<h , f<j , pfl) (d<f , pfr)
+                                                       (e ◁ cover f<j , cover f<h , ∎)
+                                                       (g ◀ cover d<f , ∎))
+  ... | black , r             = , {!!}
+  ... | red   , nr r (r<h , r<j , prl) (d<r , prr) rl rr = , {!!}
 
 {- EFF
 
