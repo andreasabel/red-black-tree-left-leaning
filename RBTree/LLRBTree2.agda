@@ -362,8 +362,8 @@ EFF -}
     in nr f pfl pfr r' (nb j pjl pjr (nr h phl phr g i) k)
 
   deleteCrawl x (nr f pfl pfr
-                    (nb d (d<f , pdl) pdr
-                          (nr b (b<d , b<f , pbl) pbr a c)
+                    (nb d pdl pdr
+                          (nr b pbl pbr a c)
                           e)
                     (nb j pjl pjr
                           (nr h phl phr g i)
@@ -403,8 +403,45 @@ EFF -}
       | tri> _ _ x>d | tri≈ _ x≈f _ with deleteR x (nr f (f<h , f<j , pfl) (d<f , pfr)
                                                        (e ◁ cover f<j , cover f<h , ∎)
                                                        (g ◀ cover d<f , ∎))
-  ... | black , r             = , {!!}
-  ... | red   , nr r (r<h , r<j , prl) (d<r , prr) rl rr = , {!!}
+  ... | black , r = ,
+    let k' = k ◀ keep cover d<f , skip ∎
+        i' = i ◀ keep cover d<f , skip ∎
+        h' = nr h (h<j , phl) (trans d<f f<h , phr) r i'
+        j' = nb j pjl (trans d<f f<j , pjr) h' k'
+        b' = nb b (b<d , b<f , pbl) pbr a c ◁ keep skip ∎
+    in nr d pdl pdr b' j'
+  ... | red   , nr r (r<h , r<j , prl) (d<r , prr) rl rr = ,
+    let rl' = rl ◁ keep skip skip ∎
+        rr' = rr ◀ keep skip ∎
+        k'  = k ◀ cover r<j , keep keep skip ∎
+        i'  = i ◀ cover r<h , keep keep skip ∎
+        h'  = nr h (h<j , phl) (r<h , phr) rr' i'
+        j'  = nb j pjl (r<j , pjr) h' k'
+        a'  = a ◁ keep cover d<r , keep keep skip ∎
+        c'  = c ◁ cover d<r , keep keep skip ∎
+        b'  = nr b (b<d , trans b<d d<r , pbl) pbr a' c'
+        d'  = nb d (d<r , pdl) pdr b' rl'
+    in nr r prl prr d' j'
+
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                          (nr b pbl pbr a c)
+                          e)
+                    (nb j pjl pjr
+                          (nr h phl phr g i)
+                          k))
+      | tri> _ _ x>d | tri> _ _ x>f with compare x j
+
+  -- 2.3.4
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                          (nr b pbl pbr a c)
+                          e)
+                    (nb j pjl pjr
+                          (nr h phl phr g i)
+                          k))
+      | tri> _ _ x>d | tri> _ _ x>f | tri< x<j _ _ with deleteR x (nr h phl phr g i)
+  ... | _ , r = , nr f pfl pfr (nb d pdl pdr (nr b pbl pbr a c) e) (nb j pjl pjr r k)
 
 {- EFF
 
