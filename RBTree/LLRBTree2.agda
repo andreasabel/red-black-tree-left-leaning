@@ -243,6 +243,7 @@ mutual
 
   deleteCrawl : ∀ {n β γ} → A → Tree' β γ red (2 + n) → ∃ λ c' → Tree' β γ c' (2 + n)
 
+{- EFF
   -- 2.4
   deleteCrawl x (nr d pdl pdr
                     (nb b pbl pbr
@@ -250,7 +251,6 @@ mutual
                     (nb f pfl pfr
                         (nb e pef per el er) (nb g pgl pgr gl gr))) with compare x d
 
-{- EFF -}
   -- 2.4.2
   deleteCrawl x (nr d pdl pdr
                     (nb b (b<d , pbl) pbr
@@ -319,7 +319,28 @@ mutual
                                               (nb a pal par al ar)
                                               (nb c pcl pcr cl cr))
                                           (nb r prl prr rl rr)
-{- EFF -}
+EFF -}
+
+  -- 2.3
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b pbl pbr a c)
+                        e)
+                    (nb j pjl pjr
+                        (nr h phl phr g i)
+                        k)) with compare x d
+
+  -- 2.3.1
+  deleteCrawl x (nr f pfl pfr
+                    (nb d pdl pdr
+                        (nr b pbl pbr a c)
+                        e)
+                    (nb j pjl pjr
+                        (nr h phl phr g i)
+                        k))
+      | tri< x<d _ _ with deleteR x (nr b pbl pbr a c)
+  ... | _ , r = , nr f pfl pfr (nb d pdl pdr r e) (nb j pjl pjr (nr h phl phr g i) k)
+
 
 {- EFF
 
