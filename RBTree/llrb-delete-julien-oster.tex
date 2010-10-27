@@ -1,0 +1,222 @@
+\documentclass{scrartcl}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{verbatim}
+\usepackage{autofe}
+\usepackage{mdwlist}
+
+\newcommand\textbeta{\ensuremath{\beta}}
+\newcommand\textgamma{\ensuremath{\gamma}}
+
+\DeclareUnicodeCharacter{"225F}{$\stackrel{\tiny ?}{=}$}
+\DeclareUnicodeCharacter{"2237}{::}
+\DeclareUnicodeCharacter{"02E1}{\ensuremath{^l}}
+\DeclareUnicodeCharacter{"220E}{qed}
+
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{3ex plus 2ex minus 2ex}
+
+\newenvironment{code}{\verbatim}{\endverbatim}
+
+\begin{document}
+
+\title{Deletion in Left-leaning Red-Black trees, a proven functional approach in Agda}
+\date{\today}
+\author{Julien Oster, Ludwig-Maximilians-Universität München}
+
+\maketitle
+
+\section{The data type for LLRBs}
+
+The data type used for representing Left-leaning Red-Black trees is
+directly taken from \cite{eha2009}, with minor modifications. It uses
+internal logic as a technique to embed all invariants that make up a
+valid Left-leaning Red-Black tree in the data type and its
+constructors itself. Thus, every function that creates or transforms
+LLRB trees using this data type will only type check if every
+invariant is proven as part of its definition.
+
+While we present the tree data type in full detail, we will also look
+at the various differences to the original data type as specified in
+\cite{eha2009}.
+
+First, let us declare the module in which the data type and
+all code is contained.
+
+\begin{code}
+module LLRBTree2
+  (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
+\end{code}
+Herein, we see the first distinction to \cite{eha2009}, which aims to
+fit the code more into the Standard Library. The original code
+parameterized the module with:
+
+\begin{itemize*}
+\item a type (the key type),
+\item an order and an equivalence relation onto the key type,
+\item a function for comparing values,
+\item another function for applying the transitivity of the order relation,
+\end{itemize*}
+
+This is done to allow any type to fill out the role as a key, as long
+as we can also provide the other parameters to it. However, it's very
+often the case that a satisfying data type brings its common order
+relation with it, together with a function to compare and means to
+apply transitivity. For example, on the type of natural numbers this
+would be its common strict total order relation $<$, which orders
+natural numbers from smaller to greater.
+
+We therefore choose to use a single \verb/StrictTotalOrder/ (as
+defined in the Standard Library) as a parameter instead. This
+particular record type fits well because it contains
+all of the above as fields of itself.
+
+By subsequently opening the record, all relevant fields (such as
+\verb/_<_/, \verb/_≟_/, \verb/trans/, \verb/compare/) are available to
+us in the namespace of our module, without having to specify the name
+\verb/order/:
+
+\nopagebreak
+\begin{code}
+open module sto = StrictTotalOrder order
+A = StrictTotalOrder.Carrier order
+\end{code}
+The second line allows us to refer to the \verb/StrictTotalOrder/'s
+carrier, which is the type used to store the node's keys, simply as
+\verb/A/ in our namespace.
+
+Next, we define what bounds are:
+
+\begin{code}
+BoundsL = List A
+BoundsG = List A
+\end{code}
+
+Bounds are just simple lists of values (of our key type, \verb/A/). A
+value being within those bounds means that it is smaller
+(\verb/BoundsL/) or greater (\verb/BoundsG/) than all elements in the
+respective list. However, this simple list type doesn't reflect that yet. To
+achieve this, we want to get types for proofs out of this bounds.
+
+These proofs are what keeps our trees consistent with the search tree
+invariant: The tree type will be parameterized with each of both
+bounds lists. Then, any node constructor which contains a key
+(i.e. any constructor except for the leaf constructor) must contain
+proofs that its key is within \verb/BoundsL/ and \verb/BoundsG/, which
+means that it is smaller than all values in \verb/BoundsL/ and greater
+than all values in \verb/BoundsG/. Moreover, every non-leaf
+constructor which creates a node also specifies a left and a right
+subtree as children, but the bounds list in the type of those children
+(\verb/BoundsL/ for the left child, \verb/BoundsG/ for the right
+child) is the parent's bounds list, prepended with the key of this
+node. Conclusively, every subtree must now not only satisfy the
+original bounds of its parent node, but additionally all keys within
+it must now also be smaller (if it is a left subtree) or greater (if
+it is a right subtree) than its parent's key!
+
+The \emph{types} of these proofs are gained with the following operators:
+
+\begin{code}
+infix 5 _isleftof_
+_isleftof_ : A → BoundsL → Setℓ
+z isleftof []     = ⊤
+z isleftof b ∷ β  = z < b × z isleftof β
+
+infix 5 _isrightof_
+_isrightof_ : A → BoundsG → Setℓ
+z isrightof []     = ⊤
+z isrightof b ∷ γ  = b < z × z isrightof γ
+\end{code}
+
+Looking just at \verb/BoundsL/, proving that a value is within
+particular bounds means supplying a proof that the value is smaller
+than the head of its bounds list and, inductively, that it's within the
+rest of the bounds list. A value is always within empty bounds (thus
+the type is the trivially provable ⊤ in that case).
+
+The same applies to \verb/BoundsG/, except that the list's head and
+the given value are now reversed in the relation.
+
+A key difference between the bounds definition in \cite{eha2009} and
+this one is that there are now two bounds lists instead of just
+one. \cite{eha2009} defined the single bounds type to contain either
+constraints in any order, by not keeping simple lists of values, but
+having different constructors for bound values that are to be ``left''
+and ``right'' bounds. Subsequently, the tree type was only
+parameterized with the one bounds list and each inner node constructor
+only needed to specifies one proof instead of two, the proof that its key
+value is within the given bounds.
+
+The reason why we chose to abandon this approach in favor of two
+explicit lists of bounds will get clear after we look at the
+operations and reasons for manipulating them:
+
+\begin{code}
+infix 5 _⇒ˡ_
+data _⇒ˡ_ : BoundsL → BoundsL → Setℓ where
+  ∎      : ∀ {β} → β ⇒ˡ β
+  keep_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ b ∷ β'
+  skip_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ β'
+  cover_,_  : ∀ {β β' x y} → x < y → x ∷ y ∷ β ⇒ˡ β'
+         → x ∷ β ⇒ˡ β'
+
+infix 5 _⇒ʳ_
+data _⇒ʳ_ : BoundsG → BoundsG → Setℓ where
+  ∎      : ∀ {γ} → γ ⇒ʳ γ
+  keep_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ b ∷ γ'
+  skip_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ γ'
+  cover_,_  : ∀ {γ γ' x y} → x < y → y ∷ x ∷ γ ⇒ʳ γ'
+         → y ∷ γ ⇒ʳ γ'
+\end{code}
+
+Manipulating bounds is needed because when reconfiguring a tree into
+another, the bounds of individual nodes may change, while the overall
+relation between them stays intact (otherwise, we would break the
+search invariant).
+
+Let's look at a valid transformation of a simple tree:
+
+\begin{verbatim}
+  b                            e
+a   c                       b     f
+      f        --->      a    c     g
+    e   g                      d
+   d
+
+\end{verbatim}
+
+It is clear that while the shapes of the trees are different, they
+still retain the same order relations between their elements and thus
+the search tree invariant has been kept.
+
+However, let's look at the two bounds list of node \verb/e/'s tree
+type, as well as at the combination of the two. We hereby assume that
+the bounds for the root element of the left tree, \verb/b/, is
+empty. In the left tree, the bounds lists look like that:
+
+\begin{verbatim}
+L bounds: e :: f
+G bounds: f :: c :: b
+combined: leftOf e :: leftOf f :: rightOf c :: rightOf b
+\end{verbatim}
+
+With every level down, the parent's key is prepended to the respective
+bounds list (depending on whether the child is left or right). Thus,
+according to the resulting lists, \verb/e/ must be smaller than
+\verb/f/ and \verb/g/, but greather than \verb/d/, \verb/c/ and
+\verb/b/. \verb/a/ and \verb/h/ are not appearing because they are not
+on the path between the root and \verb/e/, and thus never handed
+down. The combined bounds reflect this by being exactly that path.
+
+On the right tree, the bounds lists look differently, now:
+
+\begin{verbatim}
+L bounds: e
+G bounds: c :: b
+combined: rightOf c :: rightOf b :: leftOf e
+\end{verbatim}
+
+\bibliographystyle{plain}
+\bibliography{llrb.bib}
+
+\end{document}

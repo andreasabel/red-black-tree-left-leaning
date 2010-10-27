@@ -6,3 +6,10 @@ lib-*
 *.agdai
 *~
 html
+
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.pdf
