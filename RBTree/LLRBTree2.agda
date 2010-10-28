@@ -45,30 +45,28 @@ BoundsL = List A
 BoundsR = List A
 
 infix 5 _isleftof_
-_isleftof_ : A → BoundsL → Setℓ
+_isleftof_ : A → BoundsR → Setℓ
 z isleftof []     = ⊤
 z isleftof b ∷ β  = z < b × z isleftof β
 
 infix 5 _isrightof_
-_isrightof_ : A → BoundsR → Setℓ
+_isrightof_ : A → BoundsL → Setℓ
 z isrightof []     = ⊤
 z isrightof b ∷ γ  = b < z × z isrightof γ
-
-infix 5 _⇒ˡ_
-data _⇒ˡ_ : BoundsL → BoundsL → Setℓ where
-  ∎      : ∀ {β} → β ⇒ˡ β
-  keep_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ b ∷ β'
-  skip_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ β'
-  swap_  : ∀ {β β' b b'} → b ∷ b' ∷ β ⇒ˡ β' → b' ∷ b ∷ β ⇒ˡ β'
-  cover_,_  : ∀ {β β' x y} → x < y → x ∷ y ∷ β ⇒ˡ β'
-         → x ∷ β ⇒ˡ β'
 
 infix 5 _⇒ʳ_
 data _⇒ʳ_ : BoundsR → BoundsR → Setℓ where
   ∎      : ∀ {γ} → γ ⇒ʳ γ
   keep_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ b ∷ γ'
   skip_  : ∀ {γ γ' b} → γ ⇒ʳ γ' → b ∷ γ ⇒ʳ γ'
-  swap_  : ∀ {γ γ' b b'} → b ∷ b' ∷ γ ⇒ʳ γ' → b' ∷ b ∷ γ ⇒ʳ γ'
+  cover_,_  : ∀ {β β' x y} → x < y → x ∷ y ∷ β ⇒ˡ β'
+         → x ∷ β ⇒ˡ β'
+
+infix 5 _⇒ˡ_
+data _⇒ˡ_ : BoundsL → BoundsL → Setℓ where
+  ∎      : ∀ {β} → β ⇒ˡ β
+  keep_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ b ∷ β'
+  skip_  : ∀ {β β' b} → β ⇒ˡ β' → b ∷ β ⇒ˡ β'
   cover_,_  : ∀ {γ γ' x y} → x < y → y ∷ x ∷ γ ⇒ʳ γ'
          → y ∷ γ ⇒ʳ γ'
 
@@ -76,14 +74,12 @@ data _⇒ʳ_ : BoundsR → BoundsR → Setℓ where
 ⟦ ∎          ⟧ˡ z p              = p
 ⟦ keep h     ⟧ˡ z (p₁ , p₂)      = p₁ , ⟦ h ⟧ˡ z p₂
 ⟦ skip h     ⟧ˡ z (_  , p)       = ⟦ h ⟧ˡ z p
-⟦ swap h     ⟧ˡ z (p₁ , p₂ , p)  = ⟦ h ⟧ˡ z (p₂ , p₁ , p)
 ⟦ cover  q , h ⟧ˡ z (p₁ , p)       = ⟦ h ⟧ˡ z (p₁ , trans p₁ q , p)
 
 ⟦_⟧ʳ : ∀ {γ γ'} → γ ⇒ʳ γ' → (x : A) → x isrightof γ → x isrightof γ'
 ⟦ ∎          ⟧ʳ z p              = p
 ⟦ keep h     ⟧ʳ z (p₁ , p₂)      = p₁ , ⟦ h ⟧ʳ z p₂
 ⟦ skip h     ⟧ʳ z (_  , p)       = ⟦ h ⟧ʳ z p
-⟦ swap h     ⟧ʳ z (p₁ , p₂ , p)  = ⟦ h ⟧ʳ z (p₂ , p₁ , p)
 ⟦ cover  q , h ⟧ʳ z (p₁ , p)       = ⟦ h ⟧ʳ z (p₁ , trans q p₁ , p)
 
 ------------------------------------------------------------------------

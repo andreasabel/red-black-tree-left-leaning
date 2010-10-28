@@ -1,4 +1,4 @@
--- {-# OPTIONS --no-coverage-check #-}
+{-# OPTIONS --no-coverage-check #-}
 
 open import Level
 import Relation.Binary
@@ -65,10 +65,10 @@ data Color : Set where
 
 data Tree' (β : Bounds) : Color → ℕ → Set where
   lf : Tree' β black 0
-  nr : ∀ {n}(a : A) → .(a is β)
+  nr : ∀ {n}(a : A) → (a is β)
      → Tree' (leftOf a ∷ β) black n → Tree' (rightOf a ∷ β) black n
      → Tree' β red n
-  nb : ∀ {leftSonColor n}(a : A) → .(a is β)
+  nb : ∀ {leftSonColor n}(a : A) → (a is β)
      → Tree' (leftOf a ∷ β) leftSonColor n → Tree' (rightOf a ∷ β) black n
      → Tree' β black (suc n)
 
@@ -165,8 +165,8 @@ makeBlack {black} t = t
 makeBlack {.red} (nr b pb t1 t2) = nb b pb t1 t2
 
 
+{-
 extractMinR : ∀ {n β} → Tree' β red n → ∃₂ λ min c → min is β × Tree' (rightOf min ∷ β) c n
-
 {-
    (a)       -->  .
  -}
@@ -240,11 +240,13 @@ extractMinR (nr b pb (nb a (a<b , pa) (nb x1 px1 t1l t1r) t2) (nb d (b<d , pd) (
     (t4 ◁ keep coverR x<b (skip ∎))
 ... | x , red , (x<b , px) , nr a' pa' t1' t2' =
       x , red , px , nr b (x<b , pb) (nb a' pa' t1' t2' ◁ swap ∎) (nb d (b<d , pd) (nb x3 (x3<d , b<x3 , px3) t3l t3r) t4 ◁ coverR x<b ∎)
-
+-}
 
 -- for saving t.c. time, replace deleteR by axiom
 
--- postulate
+postulate
+  extractMinR : ∀ {n β} → Tree' β red n → ∃₂ λ min c → min is β × Tree' (rightOf min ∷ β) c n
+
 --   deleteR : ∀ {n β} → A → Tree' β red n → ∃ λ c' → Tree' β c' n
 
 mutual
@@ -314,7 +316,7 @@ mutual
   ... | black , (nb r (b<r , r<f , pr) rl rr) =
            , nb f pf
                 (nr b (trans b<d d<f , pb)
-                  ((nb a pa al ar ◁ keep skip ∎) ◁ coverL (trans b<d d<f) ∎)
+                  {!nb a pa al ar ◁ keep coverL d<f (skip ∎)!}
                   (nb r (b<r , r<f , pr) rl rr ◁ ∎))
                 (nb g pg gl gr ◁ keep skip ∎)
   -- 2.4.1
@@ -462,7 +464,7 @@ mutual
   -- 2.2.2
   deleteCrawl x (nr d pd (nb b (b<d , pb) (nb a pa al ar) c) (nb h (d<h , ph) (nr f (f<h , d<f , pf) e g) i))
       | tri≈ _ x≈d _ with deleteR x (nr d (b<d , d<f , pd)
-                                          ((c ◁ keep coverL d<f ∎) ◁ swap ∎)
+                                          {! c ◁ swap coverL d<f (keep swap ∎) !}
                                           ((e ◁ keep skip coverR b<d ∎) ◁ swap keep swap ∎))
   ... | red   , nr r (b<r , r<f , pr) rl rr = ,
                                   let a' = nb a pa al ar ◁ coverL b<r (keep keep coverL d<f (skip ∎))
