@@ -28,28 +28,31 @@ variable
 
 mutual
   data RBTree : ℕ → Color → Set where
-    rbl : RBTree 0 black
-    rbr : (l : RBTree n black)
+
+    leaf : RBTree 0 black
+
+    node-red : (l : RBTree n black)
         → (k : α)
         → (r : RBTree n black)
         → RBTree n red
-    rbb : (l : RBTree n c₁)
+
+    node-black : (l : RBTree n c₁)
         → (k : α)
         → (r : RBTree n c₂)
         → RBTree (1 + n) black
 
   color : ∀ {b c} → RBTree b c → Color
-  color rbl = black
-  color (rbb _ _ _) = red
-  color (rbr _ _ _) = red
+  color leaf = black
+  color (node-black _ _ _) = red
+  color (node-red _ _ _) = red
 
 empty : RBTree 0 black
-empty = rbl
+empty = leaf
 
 ∥_∥ : ∀ {b c} → RBTree b c → ℕ
-∥ rbl ∥ = 0
-∥ rbr l k r ∥ = 1 + ∥ l ∥ + ∥ r ∥
-∥ rbb l k r ∥ = 1 + ∥ l ∥ + ∥ r ∥
+∥ leaf ∥ = 0
+∥ node-red l k r ∥ = 1 + ∥ l ∥ + ∥ r ∥
+∥ node-black l k r ∥ = 1 + ∥ l ∥ + ∥ r ∥
 
 private
 
@@ -87,79 +90,107 @@ private
 
   balL : ∀ {b} → fragL b → ∃ λ c → RBTree (suc b) c
 
-  balL (flbrb- a x (rbr b y c) z d) = _ , rbr (rbb a x b) y (rbb c z d)
-  balL (flbr-b (rbr a x b) y c z d) = _ , rbr (rbb a x b) y (rbb c z d)
+  balL (flbrb- a x (node-red b y c) z d) = _ , node-red (node-black a x b) y (node-black c z d)
+  balL (flbr-b (node-red a x b) y c z d) = _ , node-red (node-black a x b) y (node-black c z d)
 
-  balL (flbrb- a x (rbb b y c) z d) = _ , rbb (rbr a x (rbb b y c)) z d
-  balL (flbr-b (rbb a x b) y c z d) = _ , rbb (rbr (rbb a x b) y c) z d
+  balL (flbrb- a x (node-black b y c) z d) = _ , node-black (node-red a x (node-black b y c)) z d
+  balL (flbr-b (node-black a x b) y c z d) = _ , node-black (node-red (node-black a x b) y c) z d
 
   -- Leaf cases
-  balL (flbr-b rbl y c z d) = _ , rbb (rbr rbl y c) z d
-  balL (flbrb- b y rbl z d) = _ , rbb (rbr b y rbl) z d
+  balL (flbr-b leaf y c z d) = _ , node-black (node-red leaf y c) z d
+  balL (flbrb- b y leaf z d) = _ , node-black (node-red b y leaf) z d
 
   balR : ∀ {h} → fragR h → ∃ λ c → RBTree (suc h) c
 
-  balR (frbr-b a x (rbr b y c) z d) = _ , rbr (rbb a x b) y (rbb c z d)
-  balR (frbrb- a x b y (rbr c z d)) = _ , rbr (rbb a x b) y (rbb c z d)
+  balR (frbr-b a x (node-red b y c) z d) = _ , node-red (node-black a x b) y (node-black c z d)
+  balR (frbrb- a x b y (node-red c z d)) = _ , node-red (node-black a x b) y (node-black c z d)
 
-  balR (frbr-b a x (rbb b y c) z d) = _ , rbb a x (rbr (rbb b y c) z d)
-  balR (frbrb- a x b y (rbb c z d)) = _ , rbb a x (rbr b y (rbb c z d))
+  balR (frbr-b a x (node-black b y c) z d) = _ , node-black a x (node-red (node-black b y c) z d)
+  balR (frbrb- a x b y (node-black c z d)) = _ , node-black a x (node-red b y (node-black c z d))
 
   -- Leaf cases
-  balR (frbr-b a x rbl y c) = _ , rbb a x (rbr rbl y c)
-  balR (frbrb- a x b y rbl) = _ , rbb a x (rbr b y rbl)
+  balR (frbr-b a x leaf y c) = _ , node-black a x (node-red leaf y c)
+  balR (frbrb- a x b y leaf) = _ , node-black a x (node-red b y leaf)
 
   mutual
-    ins : ∀ {b} → α → RBTree b black → ∃ (λ c → RBTree b c)
-    ins k rbl = _ , rbr rbl k rbl
-    ins k (rbb a x b) with compare k x
-    ... | tri≈ _ k≈x _ = _ , rbb a x b
+
+    -- Insertion into black tree preserves the black height,
+    -- but might return a red node.
+
+    ins : (k : α) → RBTree h black → ∃ (λ c → RBTree h c)
+
+    -- Inserting into a leaf makes a red node
+
+    ins k leaf = _ , node-red leaf k leaf
+
+    ins k (node-black a x b) with compare k x
+    ... | tri≈ _ k≈x _ = _ , node-black a k b
     ... | tri< k<x _ _ = insL k a x b k<x
     ... | tri> _ _ x<k = insR k a x b x<k
 
-    insL : ∀ {h c₁ c₂}
-           → (k : α) → (a : RBTree h c₁) → (x : α) → (b : RBTree h c₂)
-           → k < x
-           → ∃ (λ c → RBTree (suc h) c)
 
-    insL k rbl x b k<x =
-      _ , rbb (rbr rbl k rbl) x b
+    -- Insertion into the left subtree of a black node
 
-    insL k (rbb a x b) y c k<y =
-      let xt = (rbb a x b)
-          xt' = proj₂ (ins k xt)
-      in _ , rbb xt' y c
+    insL : (k : α)                                     -- key to insert
+         → (a : RBTree h c₁) (x : α) (b : RBTree h c₂) -- taken-apart black node
+         → k < x
+         → ∃ (λ c → RBTree (suc h) c)
 
-    insL k (rbr a x b) y c  k<y with compare k x
-    ... | tri≈ _ _ _ = _ , rbb (rbr a x b) y c
+    -- Inserting into a leaf makes a black tree with a red subnode
+    -- This is the "ins" code.
+
+    insL k leaf x b k<x =
+      _ , node-black (node-red leaf k leaf) x b
+
+    -- Inserting into a black node makes a black node
+    -- This is the "ins" code.
+
+    insL k (node-black a x b) y c k<y =
+      let _ , xt' = ins k (node-black a x b)
+      in  _ , node-black xt' y c
+
+    -- Inserting into a red node is complicated
+
+    insL k (node-red a x b) y c  k<y with compare k x
+    ... | tri≈ _ _ _ = _ , node-black (node-red a x b) y c
     ... | tri< k<x _ _ = balL (flbr-b (proj₂ (ins k a)) x b y c)
     ... | tri> _ _ x<k = balL (flbrb- a x (proj₂ (ins k b)) y c)
 
-    insR : ∀ {h c₁ c₂}
-           → (k : α) → (a : RBTree h c₁) → (x : α) → (b : RBTree h c₂)
-           → x < k
-           → ∃ (λ c → RBTree (suc h) c)
 
-    insR k a x rbl x<k =
-      _ , rbb a x (rbr rbl k rbl)
+    -- Insertion into the left subtree of a black node
 
-    insR k a x (rbb b y c) x<k =
-      let yt = (rbb b y c)
-          yt' = proj₂ (ins k yt)
-      in _ , rbb a x yt'
+    insR : (k : α)                                      -- key to insert
+         → (a : RBTree h c₁) (x : α) (b : RBTree h c₂)  -- taken-apart black node
+         → x < k
+         → ∃ (λ c → RBTree (suc h) c)
 
-    insR k a x (rbr b y c) x<k
+    -- Inserting into a leaf makes a black tree with a red subnode
+    -- This is the "ins" code.
+
+    insR k a x leaf x<k =
+      _ , node-black a x (node-red leaf k leaf)
+
+    -- Inserting into a black node makes a black node
+    -- This is the "ins" code.
+
+    insR k a x (node-black b y c) x<k =
+      let _ , yt' = ins k (node-black b y c)
+      in  _ , node-black a x yt'
+
+    -- Inserting into a red node is complicated
+
+    insR k a x (node-red b y c) x<k
          with compare k y
-    ... | tri≈ _ _ _ = _ , rbb a x (rbr b y c)
+    ... | tri≈ _ _ _ = _ , node-black a x (node-red b y c)
     ... | tri< k<y _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c)
     ... | tri> _ _ y<k = balR (frbrb- a x b y (proj₂ (ins k c)))
 
-  makeBlack : ∀ {b c} → RBTree b c → ∃ λ i → RBTree (i + b) black
-  makeBlack rbl = 0 , rbl
-  makeBlack (rbb l k r) = 0 , rbb l k r
-  makeBlack (rbr l k r) = 1 , rbb l k r
+makeBlack : RBTree h c → ∃ λ i → RBTree (i + h) black
+makeBlack leaf = 0 , leaf
+makeBlack (node-black l k r) = 0 , node-black l k r
+makeBlack (node-red   l k r) = 1 , node-black l k r
 
-insert : ∀ {b} → α → RBTree b black → ∃ λ i → RBTree (i + b) black
+insert : (k : α) → RBTree h black → ∃ λ i → RBTree (i + h) black
 insert k t = makeBlack (proj₂ (ins k t))
 
 -- -}
