@@ -28,11 +28,6 @@ open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_) -- hiding (_≤_; _<_; _≟_; compare)
 open import Data.List.Base using (List; []; _∷_; [_]; _++_; foldr)
 
--- infixr 4 ,_
-
--- ,_ : {A B : Set} {a : A} → B a → ∃ λ x → B x
--- , b = _ , b
-
 data Bound : Set where
   leftOf  : A → Bound
   rightOf : A → Bound
