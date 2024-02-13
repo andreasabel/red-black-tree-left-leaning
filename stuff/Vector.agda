@@ -52,20 +52,20 @@ module OrderedVector {α : Set}
   _≤*_ : ∀ {n} → α → (v : Vector α n) → Set
   _ ≤* [] = ⊤
   x ≤* (h ∷ t) = (x ≤ h) × (x ≤* t)
-  
+
   -- Prädikat eines aufsteigend sortierten Vektors
   Sorted : ∀ {n} → Vector α n → Set
   Sorted [] = ⊤
   Sorted (h ∷ t) = (h ≤* t) × (Sorted t)
-  
+
   -- Ist ein Element kleiner als der Kopf eines sortierten Vektors, so ist es
   -- kleiner als alle Elemente
   tailsmaller : ∀ {n a x} → (v : Vector α n) → Sorted (x ∷ v) → a ≤ x → a ≤* v
   tailsmaller [] _ _ = tt
-  tailsmaller (h ∷ t) (x≤*ht , htSorted) a≤x = 
+  tailsmaller (h ∷ t) (x≤*ht , htSorted) a≤x =
     let a≤h = trans a≤x (proj₁ x≤*ht)
-    in a≤h ,  tailsmaller t htSorted a≤h 
-  
+    in a≤h ,  tailsmaller t htSorted a≤h
+
 
   -- Ist x ≤ ein einzufügendes Element a und ≤ allen Elementen des Vektors in den
   -- eingefügt wird, so ist x auch ≤ allen Elementen des Vektors nachdem Element a
@@ -107,4 +107,3 @@ module OrderedVector {α : Set}
     lemma≤ x a (h ≤∷ t ⟵ h≤≤*t) x≤a x≤≤*v with total a h
     ... | inj₁ a≤h = x≤a
     ... | inj₂ h≤a = x≤≤*v
-

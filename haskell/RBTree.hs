@@ -138,11 +138,11 @@ fixUp = do
       fixDoubleRed (Node _ (Node Red (Node Red _ _ _) _ _) _ _) =
           perform "fix double red: rotateRight" rotateRight
       fixDoubleRed _ = return ()
-      
+
       split4Node (Node _ (Node Red _ _ _) _ (Node Red _ _ _)) =
           perform "fix 4-node: colorFlip" colorFlip
       split4Node _ = return ()
-      
+
   (t, _) <- get
   throwOverRightLeaning t
   (t1, _) <- get
@@ -323,10 +323,10 @@ black' x l r = black l x r
 red' x l r = red l x r
 leaf' x = Leaf
 
-test3g black red leaf 
+test3g black red leaf
   = black 10
-          (red 6 
-            (black 4 
+          (red 6
+            (black 4
               (red 2 (leaf 1) (leaf 3))
               (leaf 5))
             (black 8 (leaf 7) (leaf 9)))
@@ -347,13 +347,13 @@ main = do
   forM_ [8 {- 1..7 -}] (\arg -> do
     let tree = test4 -- test1
     let (r, loc, trees) = run (myDelete arg) tree
-  
+
     putStrLn ("digraph { \n"
               ++ "arg [label=\"" ++ show arg ++ "\"];\n"
               ++ "result [label=\"" ++ show r ++ "\"];\n"
               ++ "arg -> result;"
               ++ "}\n")
-  
+
     let graphs = ("init", tree) : trees
-  
+
     putStrLn $ intercalate "\n" (map dotgraph graphs))

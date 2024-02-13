@@ -1,3 +1,6 @@
+{-# OPTIONS --no-termination-check #-}
+
+import Level
 open import Relation.Binary
 
 open import Data.Unit using (⊤; tt)
@@ -10,9 +13,9 @@ data BinaryTree (α : Set) (Tree : Set) : Set where
   leaf : BinaryTree α Tree
   node : α → Tree → Tree → BinaryTree α Tree
 
-record IsBinaryTree (order : StrictTotalOrder) (Tree : Set) : Set where
+record IsBinaryTree (order : StrictTotalOrder Level.zero Level.zero Level.zero) (Tree : Set) : Set where
   α : Set
-  α = StrictTotalOrder.carrier order
+  α = StrictTotalOrder.Carrier order
 
   field
     inspect : Tree → BinaryTree α Tree
@@ -43,7 +46,7 @@ record IsBinaryTree (order : StrictTotalOrder) (Tree : Set) : Set where
   ... | node x l r = l *< x × x <* r × SearchTree l × SearchTree r
 
 record IsBinarySearchTree
-  {α : StrictTotalOrder} {Tree : Set}
+  {α} {Tree : Set}
   (isBinaryTree : IsBinaryTree α Tree) : Set where
 
   open IsBinaryTree isBinaryTree

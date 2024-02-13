@@ -1,3 +1,5 @@
+import Level
+
 open import Data.Unit using (⊤; tt)
 open import Data.Empty
 open import Data.Sum
@@ -15,12 +17,12 @@ open import BinarySearchTree
 
 open import Algebra
 
-module SimpleTree (order : StrictTotalOrder) where
+module SimpleTree (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
 
 open module sto = StrictTotalOrder order
 
 α : Set
-α = StrictTotalOrder.carrier order
+α = StrictTotalOrder.Carrier order
 
 
 private
@@ -44,9 +46,9 @@ private
 
   -- i ⊕ n -1 = pred (i ⊕ n).
 
-  _⊕_-1 : ℕ₂ → ℕ → ℕ
-  i ⊕ zero  -1 = 0
-  i ⊕ suc n -1 = i ⊕ n
+  _⊕_∸1 : ℕ₂ → ℕ → ℕ
+  i ⊕ zero  ∸1 = 0
+  i ⊕ suc n ∸1 = i ⊕ n
 
 
 mutual
@@ -144,7 +146,7 @@ mutual
 -- <*_is_bt<* : {x : α} (t : SimpleTree) → x <* t → bt._<*_ x t
 -- <*_is_bt<* {_} (leaf) x<*t = tt
 -- <*_is_bt<* {x} (node y l r l*<y y<*r) (x<y , x<*l , x<*r) =
---   x<y , <*_is_bt<* l x<*l , <*_is_bt<* r x<*r 
+--   x<y , <*_is_bt<* l x<*l , <*_is_bt<* r x<*r
 
 -- *<_is_bt*< : {x : α} (t : SimpleTree) → t *< x → bt._*<_ t x
 -- *<_is_bt*< {_} (leaf) t*<x = tt
@@ -160,4 +162,3 @@ mutual
 -- simpleSearchTree = record {
 --   searchTreeInvariant = searchTreeInvariant
 --   }
-

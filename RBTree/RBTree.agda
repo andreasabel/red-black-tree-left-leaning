@@ -1,3 +1,5 @@
+import Level
+
 open import Data.Product
 
 open import Data.Unit using (⊤; tt)
@@ -5,12 +7,12 @@ open import Data.Nat hiding (_≤_; _<_; _≟_; compare)
 
 open import Relation.Binary
 
-module RBTree (order : StrictTotalOrder) where
+module RBTree (order : StrictTotalOrder Level.zero Level.zero Level.zero) where
 
 open module sto = StrictTotalOrder order
 
 α : Set
-α = StrictTotalOrder.carrier order
+α = StrictTotalOrder.Carrier order
 
 data Color : Set where
   red : Color
@@ -102,21 +104,21 @@ private
         a*<y = trans*< a a*<x x<y
         y<*d = trans<* d y<z z<*d
         ys = (x<y , a*<y , b*<y) , y<z , y<*c , y<*d
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+    in _ , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
   balL (flbr-b (rbr a x b xs) y c z d
     (x*<y , y<*c) y<z c*<z z<*d) =
     let zs = c*<z , z<*d
         y<*d = trans<* d y<z z<*d
         ys = x*<y , y<z , y<*c , y<*d
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+    in _ , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
   balL (flbrb- a x (rbb b y c ys) z d
     (a*<x , x<*y) x<z y*<z z<*d) =
     let xs = a*<x , x<*y
         a*<z = trans*< a a*<x x<z
         zs = (x<z , a*<z , y*<z) , z<*d
-    in , rbb (rbr a x (rbb b y c ys) xs) z d zs
+    in _ , rbb (rbr a x (rbb b y c ys) xs) z d zs
 
   balL (flbr-b (rbb a x b xs) y c z d
     ((x<y , a*<y , b*<y) , y<*c) y<z c*<z z<*d) =
@@ -125,20 +127,20 @@ private
         b*<z = trans*< b b*<y y<z
         zs = (y<z , (x<z , a*<z , b*<z) , c*<z) , z<*d
         ys = (x<y , a*<y , b*<y) , y<*c
-    in , rbb (rbr (rbb a x b xs) y c ys) z d zs
+    in _ , rbb (rbr (rbb a x b xs) y c ys) z d zs
 
   balL (flbr-b rbl y c z d
     (x*<y , y<*c) y<z c*<z z<*d) =
     let zs = (y<z , tt , c*<z) , z<*d
         ys = tt , y<*c
-    in , rbb (rbr rbl y c ys) z d zs
+    in _ , rbb (rbr rbl y c ys) z d zs
 
   balL (flbrb- b y rbl z d
     (b*<y , x<*y) y<z y*<z z<*d) =
     let ys = b*<y , tt
         b*<z = trans*< b b*<y y<z
         zs = (y<z , b*<z , tt) , z<*d
-    in , rbb (rbr b y rbl ys) z d zs
+    in _ , rbb (rbr b y rbl ys) z d zs
 
 
   balR : ∀ {h} → fragR h → ∃ λ c → RBTree (suc h) c
@@ -151,21 +153,21 @@ private
         y<*d = trans<* d y<z z<*d
         ys = (x<y , a*<y , b*<y) , y<z , y<*c , y<*d
 
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+    in _ , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
   balR (frbrb- a x b y (rbr c z d zs) a*<x x<y x<*b (b*<y , y<*z)) =
     let xs = a*<x , x<*b
         a*<y = trans*< a a*<x x<y
         ys = (x<y , a*<y , b*<y) , y<*z
 
-    in , rbr (rbb a x b xs) y (rbb c z d zs) ys
+    in _ , rbr (rbb a x b xs) y (rbb c z d zs) ys
 
   balR (frbr-b a x (rbb b y c ys) z d a*<x x<z x<*y ((y<z , b*<z , c*<z) , z<*d)) =
     let x<*d = trans<* d x<z z<*d
         xs = a*<x , x<z , x<*y , x<*d
         zs = (y<z , b*<z , c*<z) , z<*d
 
-    in , rbb a x (rbr (rbb b y c ys) z d zs) xs
+    in _ , rbb a x (rbr (rbb b y c ys) z d zs) xs
 
   balR (frbrb- a x b y (rbb c z d zs) a*<x x<y x<*b (b*<y , y<z , y<*c , y<*d)) =
     let x<z = trans x<y y<z
@@ -174,25 +176,25 @@ private
         xs = a*<x , x<y , x<*b , x<z , x<*c , x<*d
         ys = b*<y , y<z , y<*c , y<*d
 
-    in , rbb a x (rbr b y (rbb c z d zs) ys) xs
+    in _ , rbb a x (rbr b y (rbb c z d zs) ys) xs
 
   balR (frbr-b a x rbl y c a*<x x<y x<*y (tt , y<*c)) =
     let x<*c = trans<* c x<y y<*c
         xs = a*<x , x<y , tt , x<*c
         ys = tt , y<*c
 
-    in , rbb a x (rbr rbl y c ys) xs
+    in _ , rbb a x (rbr rbl y c ys) xs
 
   balR (frbrb- a x b y rbl a*<x x<y x<*b (b*<y , tt)) =
     let xs = a*<x , x<y , x<*b , tt
 
-    in , rbb a x (rbr b y rbl (b*<y , tt)) xs
+    in _ , rbb a x (rbr b y rbl (b*<y , tt)) xs
 
   mutual
     ins : ∀ {b} → α → RBTree b black → ∃ (λ c → RBTree b c)
-    ins k rbl = , rbr rbl k rbl (tt , tt)
+    ins k rbl = _ , rbr rbl k rbl (tt , tt)
     ins k (rbb a x b xs) with compare k x
-    ... | tri≈ _ k≈x _ = , rbb a x b xs
+    ... | tri≈ _ k≈x _ = _ , rbb a x b xs
     ... | tri< k<x _ _ = insL k a x b xs k<x
     ... | tri> _ _ x<k = insR k a x b xs x<k
 
@@ -202,15 +204,15 @@ private
            → ∃ (λ c → RBTree (suc h) c)
 
     insL k rbl x b (tt , x<*b) k<x =
-      , rbb (rbr rbl k rbl (tt , tt)) x b ((k<x , tt , tt) , x<*b)
+      _ , rbb (rbr rbl k rbl (tt , tt)) x b ((k<x , tt , tt) , x<*b)
 
     insL k (rbb a x b xs) y c (ys , y<*c) k<y =
       let xt = (rbb a x b xs)
           xt' = proj₂ (ins k xt)
-      in , rbb xt' y c (ins-pres-*< (rbb a x b xs) k<y ys , y<*c)
+      in _ , rbb xt' y c (ins-pres-*< (rbb a x b xs) k<y ys , y<*c)
 
     insL k (rbr a x b (a*<x , x<*b)) y c ((x<y , a*<y , b*<y) , y<*c)  k<y with compare k x
-    ... | tri≈ _ _ _ = , rbb (rbr a x b (a*<x , x<*b)) y c
+    ... | tri≈ _ _ _ = _ , rbb (rbr a x b (a*<x , x<*b)) y c
                              ((x<y , a*<y , b*<y) , y<*c)
     ... | tri< k<x _ _ = balL (flbr-b (proj₂ (ins k a)) x b y c
                             (ins-pres-*< a k<x a*<x , x<*b) x<y b*<y y<*c)
@@ -223,19 +225,19 @@ private
            → ∃ (λ c → RBTree (suc h) c)
 
     insR k a x rbl (a<*x , tt) x<k =
-      , rbb a x (rbr rbl k rbl (tt , tt)) (a<*x , x<k , tt , tt)
+      _ , rbb a x (rbr rbl k rbl (tt , tt)) (a<*x , x<k , tt , tt)
 
     insR k a x (rbb b y c ys)
          (a<*x , x<y , x<*b , x<*c) x<k =
       let yt = (rbb b y c ys)
           x<*yt = x<y , x<*b , x<*c
           yt' = proj₂ (ins k yt)
-      in , rbb a x yt' (a<*x , ins-pres-<* yt x<k x<*yt)
+      in _ , rbb a x yt' (a<*x , ins-pres-<* yt x<k x<*yt)
 
     insR k a x (rbr b y c (b*<y , y<*c))
          (a*<x , x<y , x<*b , x<*c) x<k
          with compare k y
-    ... | tri≈ _ _ _ = , rbb a x (rbr b y c (b*<y , y<*c))
+    ... | tri≈ _ _ _ = _ , rbb a x (rbr b y c (b*<y , y<*c))
                              (a*<x , x<y , x<*b , x<*c)
     ... | tri< k<y _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c
                             a*<x x<y (ins-pres-<* b x<k x<*b) (ins-pres-*< b k<y b*<y , y<*c))
