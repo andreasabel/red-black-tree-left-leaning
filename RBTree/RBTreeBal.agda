@@ -151,8 +151,8 @@ private
 
     -- Inserting into a red node is complicated
 
-    insL k (node-red a x b) y c  k<y with compare k x
-    ... | tri≈ _ _ _ = _ , node-black (node-red a x b) y c
+    insL k (node-red a x b) y c k<y with compare k x
+    ... | tri≈ _ _ _   = _ , node-black (node-red a k b) y c
     ... | tri< k<x _ _ = balL (flbr-b (proj₂ (ins k a)) x b y c)
     ... | tri> _ _ x<k = balL (flbrb- a x (proj₂ (ins k b)) y c)
 
@@ -181,7 +181,7 @@ private
 
     insR k a x (node-red b y c) x<k
          with compare k y
-    ... | tri≈ _ _ _ = _ , node-black a x (node-red b y c)
+    ... | tri≈ _ _ _   = _ , node-black a x (node-red b k c)
     ... | tri< k<y _ _ = balR (frbr-b a x (proj₂ (ins k b)) y c)
     ... | tri> _ _ y<k = balR (frbrb- a x b y (proj₂ (ins k c)))
 
