@@ -92,13 +92,6 @@ rotateRightColorFlip : (a : A)
   → Tree' red (suc n)
 rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll llr) (nb a lr r)
 
-rotateLeftRotateRightColorFlip : (a : A)
-  → Almost nrrr n
-  → Tree' black n
-  → Tree' red (suc n)
-rotateLeftRotateRightColorFlip a (nrrr c l (nr b rl rr)) r =
-  rotateRightColorFlip a (nrrl b (nr c l rl) rr) r
-
 -- Insertion
 
 mutual
@@ -125,7 +118,7 @@ mutual
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
   ... | ok   , ok l' = _ , nb b l' r
   ... | nrrl , l'    = _ , rotateRightColorFlip           b l' r
-  ... | nrrr , l'    = _ , rotateLeftRotateRightColorFlip b l' r
+  ... | nrrr , (nrrr c l (nr d rl rr)) = _ , rotateRightColorFlip b (nrrl d (nr c l rl) rr) r
 
   -- Insert right
 
@@ -206,6 +199,13 @@ rotateLeft : (b : A)
            → Tree' red n
            → Tree' black (suc n)
 rotateLeft b l (nr c rl rr)  = nb c (nr b l rl) rr
+
+rotateLeftRotateRightColorFlip : (a : A)
+  → Almost nrrr n
+  → Tree' black n
+  → Tree' red (suc n)
+rotateLeftRotateRightColorFlip a (nrrr c l (nr b rl rr)) r =
+  rotateRightColorFlip a (nrrl b (nr c l rl) rr) r
 
 -- -}
 -- -}
