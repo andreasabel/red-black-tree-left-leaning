@@ -63,25 +63,20 @@ colorOf (nr a l r) = red   (nr a l r)
 colorOf lf         = black lf
 colorOf (nb a l r) = black (nb a l r)
 
-data Type : Set where
-  ok   : Type
-  nrrl : Type
-  nrrr : Type
-
-data Almost : Type → ℕ → Set where
+data Almost : ℕ → Set where
 
   ok   : Tree' c n
-       → Almost ok n
+       → Almost n
 
   nrrl : (a : A)
        → Tree' red n
        → Tree' black n
-       → Almost nrrl n
+       → Almost n
 
   nrrr : (a : A)
        → Tree' black n
        → Tree' red n
-       → Almost nrrr n
+       → Almost n
 
 redToBlack : Tree' red n → Tree' black (suc n)
 redToBlack (nr a l r) = nb a l r
@@ -110,9 +105,9 @@ mutual
   -- Insert left into red node
 
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
-  ... | ok   , ok l'                     = _ , nb b l' r
-  ... | nrrl , nrrl c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
-  ... | nrrr , nrrr c l (nr d rl rr)     = _ , nr d (nb c l rl) (nb b rr r)
+  ... | ok l'                     = _ , nb b l' r
+  ... | nrrl c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
+  ... | nrrr c l (nr d rl rr)     = _ , nr d (nb c l rl) (nb b rr r)
 
   -- Insert right
 
@@ -123,21 +118,21 @@ mutual
 
   -- Inserting into red tree
 
-  insertR : ∀ {n} → (a : A) → Tree' red n → ∃ λ t → Almost t n
+  insertR : ∀ {n} → (a : A) → Tree' red n → Almost n
 
   -- Insert here
   insertR a (nr b l r) with compare a b
-  insertR a (nr b l r) | tri≈ _ _ _  = _ , ok (nr a l r)
+  insertR a (nr b l r) | tri≈ _ _ _  = ok (nr a l r)
 
   -- Insert left
   insertR a (nr b l r) | tri< a<b _ _ with insertB a l
-  ... | red   , l' = _ , nrrl b l' r
-  ... | black , l' = _ , ok (nr b l' r)
+  ... | red   , l' = nrrl b l' r
+  ... | black , l' = ok (nr b l' r)
 
   -- Insert right
   insertR a (nr b l r) | tri> _ _ b<a with insertB a r
-  ... | red   , r' = _ , nrrr b l r'
-  ... | black , r' = _ , ok (nr b l r')
+  ... | red   , r' = nrrr b l r'
+  ... | black , r' = ok (nr b l r')
 
 
 
@@ -193,19 +188,6 @@ rotateLeft : (b : A)
            → Tree' red n
            → Tree' black (suc n)
 rotateLeft b l (nr c rl rr)  = nb c (nr b l rl) rr
-
-rotateLeftRotateRightColorFlip : (a : A)
-  → Almost nrrr n
-  → Tree' black n
-  → Tree' red (suc n)
-rotateLeftRotateRightColorFlip a (nrrr c l (nr b rl rr)) r =
-  rotateRightColorFlip a (nrrl b (nr c l rl) rr) r
-
-rotateRightColorFlip : (a : A)
-  → Almost nrrl n
-  → Tree' black n
-  → Tree' red (suc n)
-rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll llr) (nb a lr r)
 
 -- -}
 -- -}
