@@ -54,15 +54,6 @@ data Tree' : Color → ℕ → Set where
 
 -- {- BEGIN INSERT
 
-data ColorOf : ∀ {n} → (c : Color) → Tree' c n → Set where
-  red   : ∀ {n} → (t : Tree' red   n) → ColorOf red   t
-  black : ∀ {n} → (t : Tree' black n) → ColorOf black t
-
-colorOf : ∀ {c n} → (t : Tree' c n) → ColorOf c t
-colorOf (nr a l r) = red   (nr a l r)
-colorOf lf         = black lf
-colorOf (nb a l r) = black (nb a l r)
-
 data Almost : ℕ → Set where
 
   ok   : Tree' c n
@@ -111,10 +102,10 @@ mutual
 
   -- Insert right
 
-  insertB a (nb b l r) | tri> _ _ b<a with colorOf l | insertB a r
-  ... | _        | black , r'         = _ , nb b l r'
-  ... | black .l | red   , nr c rl rr = _ , nb c (nr b l rl) rr
-  ... | red   .l | red   , r'         = _ , nr b (redToBlack l) (redToBlack r')
+  insertB a (nb             b l r) | tri> _ _ b<a with insertB a r
+  insertB a (nb             b l r) | tri> _ _ b<a | black , r'         = _ , nb b l r'
+  insertB a (nb {c = black} b l r) | tri> _ _ b<a | red   , nr c rl rr = _ , nb c (nr b l rl) rr
+  insertB a (nb {c = red  } b l r) | tri> _ _ b<a | red   , r'         = _ , nr b (redToBlack l) (redToBlack r')
 
   -- Inserting into red tree
 
