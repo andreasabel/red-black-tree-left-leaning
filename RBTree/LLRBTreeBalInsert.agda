@@ -89,20 +89,14 @@ rotateLeft : (b : A)
            → Tree' black (suc n)
 rotateLeft b l (nr c rl rr)  = nb c (nr b l rl) rr
 
-colorFlip : (b : A)
-          → Tree' red n
-          → Tree' red n
-          → Tree' red (suc n)
-colorFlip b l r = nr b (colorFlip' l) (colorFlip' r)
-  where
-    colorFlip' : ∀ {n} → Tree' red n → Tree' black (suc n)
-    colorFlip' (nr a l r) = nb a l r
+redToBlack : Tree' red n → Tree' black (suc n)
+redToBlack (nr a l r) = nb a l r
 
 rotateRightColorFlip : (a : A)
   → Almost nrrl n
   → Tree' black n
   → Tree' red (suc n)
-rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll  llr) (nb a lr r)
+rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll llr) (nb a lr r)
 
 rotateLeftRotateRightColorFlip : (a : A)
   → Almost nrrr n
@@ -131,11 +125,13 @@ mutual
   insertB a (nb b l r) with compare a b
   insertB a (nb b l r) | tri≈ _ _ _  = _ , nb a l r
 
-  -- Insert left
+  -- Insert left into black node
 
-  insertB a (nb b l r) | tri< a<b _ _ with colorOf l
-  insertB a (nb b l r) | tri< a<b _ _ | black .l = _ , nb b (proj₂ (insertB a l)) r
-  insertB a (nb b l r) | tri< a<b _ _ | red   .l with insertR a l
+  insertB a (nb {c = black} b l r) | tri< a<b _ _ = let _ , l' = insertB a l in _ , nb b l' r
+
+  -- Insert left into red node
+
+  insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
   ... | ok   , ok l' = _ , nb b l' r
   ... | nrrl , l'    = _ , rotateRightColorFlip           b l' r
   ... | nrrr , l'    = _ , rotateLeftRotateRightColorFlip b l' r
@@ -145,7 +141,7 @@ mutual
   insertB a (nb b l r) | tri> _ _ b<a with colorOf l | insertB a r
   ... | _        | black , r' = _ , nb b l r'
   ... | black .l | red   , r' = _ , rotateLeft b l r'
-  ... | red   .l | red   , r' = _ , colorFlip  b l r'
+  ... | red   .l | red   , r' = _ , nr b (redToBlack l) (redToBlack r')
 
   -- Inserting into red tree
 
@@ -207,6 +203,12 @@ ifRed black a b = b
 makeBlack : ∀ {c n} → Tree' c n → Tree' black (ifRed c (suc n) n)
 makeBlack {black} t = t
 makeBlack {.red} (nr b t1 t2) = nb b t1 t2
+
+colorFlip : (b : A)
+          → Tree' red n
+          → Tree' red n
+          → Tree' red (suc n)
+colorFlip b l r = nr b (redToBlack l) (redToBlack r)
 
 -- -}
 -- -}
