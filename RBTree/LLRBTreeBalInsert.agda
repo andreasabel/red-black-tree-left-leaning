@@ -36,7 +36,7 @@ data Color : Set where
 
 variable
   n : ℕ
-  c : Color
+  c cₗ cᵣ : Color
 
 data Tree' : Color → ℕ → Set where
 
@@ -52,62 +52,69 @@ data Tree' : Color → ℕ → Set where
      → Tree' black n
      → Tree' black (suc n)
 
--- Result of inserting into a red node.
--- A decomposed red node that does not satisfy the red-black invariant.
-
-data RedParent (n : ℕ) : Set where
-
-  -- red parent, black children (ok)
-  black-black : (a : A)
-       → Tree' black n
-       → Tree' black n
-       → RedParent n
-
-  -- red parent, red left child, black right child (needs fixup)
-  red-black : (a : A)
-       → Tree' red n
-       → Tree' black n
-       → RedParent n
-
-  -- red parent, black left child, red right child (needs fixup)
-  black-red : (a : A)
-       → Tree' black n
-       → Tree' red n
-       → RedParent n
-
 redToBlack : Tree' red n → Tree' black (suc n)
 redToBlack (nr a l r) = nb a l r
+
+-- Result of inserting into a red node.
+-- A decomposed red node with children of any color (except red-red).
+-- Does not satisfy the red-black invariant (unless both are black).
+
+data OneBlack : (cₗ cᵣ : Color) → Set where
+  black-black : OneBlack black black
+  red-black   : OneBlack red   black
+  black-red   : OneBlack black red
+
+data PreNode (n : ℕ) : Set where
+  prenode
+    : OneBlack cₗ cᵣ
+    → (a : A)
+    → Tree' cₗ n
+    → Tree' cᵣ n
+    → PreNode n
+
+left-black : (c : Color) → OneBlack black c
+left-black black = black-black
+left-black red   = black-red
+
+right-black : (c : Color) → OneBlack c black
+right-black black = black-black
+right-black red   = red-black
 
 -- Insertion
 
 mutual
 
   ------------------------------------------------------------------------
-  -- Inserting into black tree
+  -- Inserting into black tree.
+  --
+  -- Can return a red or a black tree.
 
   insertB : (a : A) → Tree' black n → ∃ λ c → Tree' c n
 
-  -- Insert into leaf
+  -- Insert into leaf: make red singleton tree.
 
-  insertB a lf            = _ , nr a lf lf
+  insertB a lf = _ , nr a lf lf
 
-  -- Insert here
+  -- Insert here.
 
   insertB a (nb b l r) with compare a b
   insertB a (nb b l r) | tri≈ _ _ _  = _ , nb a l r
 
-  -- Insert left into black node
+  -- Insert left into black node.
+  -- We can integrate the result as-is into the parent node.
 
   insertB a (nb {c = black} b l r) | tri< a<b _ _ = let _ , l' = insertB a l in _ , nb b l' r
 
-  -- Insert left into red node
+  -- Insert left into red node.
+  -- We get back a pre-node which we need might need integrate with the parent through rotation.
 
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
-  ... | black-black c ll lr              = _ , nb b (nr c ll lr) r
-  ... | red-black   c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
-  ... | black-red   c ll (nr d lrl lrr)  = _ , nr d (nb c ll lrl) (nb b lrr r)
+  ... | prenode black-black c ll lr              = _ , nb b (nr c ll lr) r
+  ... | prenode red-black   c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
+  ... | prenode black-red   c ll (nr d lrl lrr)  = _ , nr d (nb c ll lrl) (nb b lrr r)
 
-  -- Insert right
+  -- Insert right (into black node).
+  -- If the result is a red node, we need to rotate or recolor as right children cannot be red.
 
   insertB a (nb             b l r) | tri> _ _ b<a with insertB a r
   insertB a (nb             b l r) | tri> _ _ b<a | black , r'         = _ , nb b l r'
@@ -119,21 +126,13 @@ mutual
   -- Inserting into red tree.
   -- We return a decomposed node possibly violating the red-black invariant.
 
-  insertR : (a : A) → Tree' red n → RedParent n
+  insertR : (a : A) → Tree' red n → PreNode n
 
-  -- Insert here
   insertR a (nr b l r) with compare a b
-  insertR a (nr b l r) | tri≈ _ _ _  = black-black a l r
+  ... | tri≈ _ _ _   = prenode black-black a l r
+  ... | tri< a<b _ _ = let c , l' = insertB a l in prenode (right-black c) b l' r
+  ... | tri> _ _ b<a = let c , r' = insertB a r in prenode (left-black c)  b l r'
 
-  -- Insert left
-  insertR a (nr b l r) | tri< a<b _ _ with insertB a l
-  ... | red   , l' = red-black   b l' r
-  ... | black , l' = black-black b l' r
-
-  -- Insert right
-  insertR a (nr b l r) | tri> _ _ b<a with insertB a r
-  ... | red   , r' = black-red   b l r'
-  ... | black , r' = black-black b l r'
 
 
 
