@@ -133,6 +133,21 @@ mutual
   ... | tri< a<b _ _ = let c , l' = insertB a l in prenode (right-black c) b l' r
   ... | tri> _ _ b<a = let c , r' = insertB a r in prenode (left-black c)  b l r'
 
+------------------------------------------------------------------------
+-- Joining two trees.
+
+join : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
+join lf lf = _ , lf
+join (nb {c = c    } a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) with join t₂ t₃
+-- join 3-node 2-node
+join (nb {c = red  } a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , t₂₃        = _ , nr a₁₂ (redToBlack t₁) (nb a₃₄ t₂₃ t₄)
+-- join 2-node 2-node
+join (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | black , t₂₃    = _ , nb a₃₄ (nr a₁₂ t₁ t₂₃) t₄
+join (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , nr a t₂ t₃ = _ , nr a (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+-- join _ 3-node
+join (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅) with join t₂ t₃
+join (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | red , nr a₂₃ t₂ t₃ = _ , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
+join (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | black , t₂₃        = _ , nr a₃₄ (nb a₁₂ t₁ t₂₃) (nb a₄₅ t₄ t₅)
 
 
 
