@@ -86,12 +86,6 @@ data Almost : Type → ℕ → Set where
 redToBlack : Tree' red n → Tree' black (suc n)
 redToBlack (nr a l r) = nb a l r
 
-rotateRightColorFlip : (a : A)
-  → Almost nrrl n
-  → Tree' black n
-  → Tree' red (suc n)
-rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll llr) (nb a lr r)
-
 -- Insertion
 
 mutual
@@ -116,9 +110,9 @@ mutual
   -- Insert left into red node
 
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
-  ... | ok   , ok l' = _ , nb b l' r
-  ... | nrrl , l'    = _ , rotateRightColorFlip           b l' r
-  ... | nrrr , (nrrr c l (nr d rl rr)) = _ , rotateRightColorFlip b (nrrl d (nr c l rl) rr) r
+  ... | ok   , ok l'                     = _ , nb b l' r
+  ... | nrrl , nrrl c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
+  ... | nrrr , nrrr c l (nr d rl rr)     = _ , nr d (nb c l rl) (nb b rr r)
 
   -- Insert right
 
@@ -206,6 +200,12 @@ rotateLeftRotateRightColorFlip : (a : A)
   → Tree' red (suc n)
 rotateLeftRotateRightColorFlip a (nrrr c l (nr b rl rr)) r =
   rotateRightColorFlip a (nrrl b (nr c l rl) rr) r
+
+rotateRightColorFlip : (a : A)
+  → Almost nrrl n
+  → Tree' black n
+  → Tree' red (suc n)
+rotateRightColorFlip a (nrrl b (nr d  lll llr) lr) r = nr b (nb d lll llr) (nb a lr r)
 
 -- -}
 -- -}
