@@ -96,11 +96,8 @@ rotateLeftRotateRightColorFlip : (a : A)
   → Almost nrrr n
   → Tree' black n
   → Tree' red (suc n)
-rotateLeftRotateRightColorFlip a l r with rotateLeft' l
-  where
-    rotateLeft' : ∀ {n} → Almost nrrr n → Almost nrrl n
-    rotateLeft' (nrrr a l (nr b rl rr)) = nrrl b (nr a l rl) rr
-... | l' = rotateRightColorFlip a l' r
+rotateLeftRotateRightColorFlip a (nrrr c l (nr b rl rr)) r =
+  rotateRightColorFlip a (nrrl b (nr c l rl) rr) r
 
 -- Insertion
 
