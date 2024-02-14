@@ -180,9 +180,6 @@ mutual
 
 joinRB : Tree' red n → Tree' black n → Tree' black (suc n)
 joinRB (nr a₁₂ t₁ t₂) t₃ = black-any a₁₂ t₁ (proj₂ (joinBB t₂ t₃))
-joinRB (nr a₁₂ t₁ t₂) t₃ with joinBB t₂ t₃
-joinRB (nr a₁₂ t₁ _) _ | black , t₂₃        = nb a₁₂ t₁ t₂₃
-joinRB (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
 -- Result type of generic join
 
@@ -221,36 +218,28 @@ toShrink : (∃ λ c → Tree' c n) → Shrink (suc n)
 toShrink (black , t) = shrink t
 toShrink (red   , t) = stay (redToBlack t)
 
-node34 : (a₁₂ : A) (t₁ : Tree' c n) (a₂₃ : A) (t₂ t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
-node34 {c = red}   a₂₃ (nr a₁₂ t₁ t₂) a₃₄ t₃ t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
-node34 {c = black} a₁₂ t₁             a₂₃ t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+any-black-black : (a₁₂ : A) (t₁ : Tree' c n) (a₂₃ : A) (t₂ t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
+any-black-black {c = red}   a₂₃ (nr a₁₂ t₁ t₂) a₃₄ t₃ t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+any-black-black {c = black} a₁₂ t₁             a₂₃ t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
 node-small-big : (a : A) (l : Tree' black n) (r : Tree' black (suc n)) →  ∃ λ c → Tree' c (suc n)
 node-small-big a₁₂ t₁ (nb {c = black} a₂₃ t₂           t₃) = black , rotˡ a₁₂ t₁ a₂₃ t₂ t₃
 node-small-big a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) = red , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
-node-small-any-big : (a : A) (l : Tree' c n) (r : Tree' black (1 + n)) → ∃ (λ c → Tree' c (1 + n))
+node-small-any-big : (a : A) (l : Tree' c n) (r : Tree' black (suc n)) → ∃ (λ c → Tree' c (suc n))
 node-small-any-big {c = black} a l r = node-small-big a l r
 node-small-any-big {c = red}   a l r = red , nr a (redToBlack l) r
 
 node-big-small : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 -- node-big-small a (nb a₁ l l₁) r = {!rotˡ!} --internal error C-c C-a
-node-big-small a₂₃ (nb a₁₂ t₁ t₂) t₃ = node34 a₁₂ t₁ a₂₃ t₂ t₃
-
-node-black-any : (a : A) (l : Tree' black n) (r : Tree' c n) → ∃ λ c → Tree' c (suc n)
-node-black-any {c = black} a l r = black , nb a l r
-node-black-any {c = red} a l (nr a₁ r r₁) = node34 a l a₁ r r₁
-
-node-black-any' : (a : A) (l : Tree' black n) (r : Tree' c n) → Tree' black (suc n)
-node-black-any' {c = black} a l r = nb a l r
-node-black-any' {c = red} a l (nr a₁ r r₁) = rotˡ a l a₁ r r₁
+node-big-small a₂₃ (nb a₁₂ t₁ t₂) t₃ = any-black-black a₁₂ t₁ a₂₃ t₂ t₃
 
 node-any-black-black : (a₂₃ : A) (a₁₂ : A) (t₁ : Tree' c n) (t₂ : Tree' black n) (t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 node-any-black-black {c = black} a₂₃ a₁₂ t₁           t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 node-any-black-black {c = red} a₂₃ a₁₂ (nr a₀₁ t₀ t₁) t₂ t₃ = red   , nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₂₃ t₂ t₃)
 
 node-big-big-small : (a₂₃ : A) (a₁₂ : A) (t₁ t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' black (suc (suc n))
-node-big-big-small a₄₅ a₁₂ t₁ (nb a₃₄ t₃ t₄) t₅ = node-black-any' a₁₂ t₁ (proj₂ (node-any-black-black a₄₅ a₃₄ t₃ t₄ t₅))
+node-big-big-small a₄₅ a₁₂ t₁ (nb a₃₄ t₃ t₄) t₅ = black-any a₁₂ t₁ (proj₂ (node-any-black-black a₄₅ a₃₄ t₃ t₄ t₅))
 
 nodeBlackShrinkR : (a : A) (l : Tree' black n) (r : Shrink n) → ∃ λ c → Tree' c n
 nodeBlackShrinkR a l (stay r)   = red , nr a l r
@@ -268,7 +257,7 @@ nodeShrinkL {c = black} a (shrink l) r = toShrink (node-small-big a l r)
 nodeShrinkR : (a : A) (l : Tree' c n) (r : Shrink n) → Shrink (suc n)
 nodeShrinkR a l            (stay r)   = stay (nb a l r)
 nodeShrinkR a (nr a₁ l l₁) (shrink r) = stay (node-big-big-small a a₁ l l₁ r)
-nodeShrinkR a (nb a₁ l l₁) (shrink r) = toShrink (node34 a₁ l a l₁ r)
+nodeShrinkR a (nb a₁ l l₁) (shrink r) = toShrink (any-black-black a₁ l a l₁ r)
 
 mutual
 
