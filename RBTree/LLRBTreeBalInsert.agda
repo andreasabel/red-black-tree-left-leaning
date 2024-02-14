@@ -150,9 +150,8 @@ joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | red , nr a�
 joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | black , t₂₃        = _ , nr a₃₄ (nb a₁₂ t₁ t₂₃) (nb a₄₅ t₄ t₅)
 
 joinR : Tree' red n → Tree' black n → Tree' black (suc n)
-joinR t lf = redToBlack t
 joinR (nr a₁₂ t₁ t₂) t₃ with joinB t₂ t₃
-joinR (nr a₁₂ t₁ _) _ | black , t₂₃ = nb a₁₂ t₁ t₂₃
+joinR (nr a₁₂ t₁ _) _ | black , t₂₃        = nb a₁₂ t₁ t₂₃
 joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
 -- joinR : Tree' red n → Tree' black n → ∃ λ c → Tree' c n
@@ -178,9 +177,11 @@ join {c = black} t₁ t₂ = toGrow (joinB t₁ t₂)
 
 -- Returning a possibly shrunk tree from an operation
 
-data Shrink : ℕ → Set where
-  stay   : (t : Tree' black n) → Shrink n
-  shrink : (t : Tree' black n) → Shrink (1 + n)
+data Shrink' (c : Color) : ℕ → Set where
+  stay   : (t : Tree' c n) → Shrink' c n
+  shrink : (t : Tree' c n) → Shrink' c (1 + n)
+
+Shrink = Shrink' black
 
 toShrink : Grow n → Shrink (1 + n)
 toShrink (stay t) = shrink t
@@ -192,6 +193,14 @@ node3 a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 node34 : (a₁₂ : A) (t₁ : Tree' c n) (a₂₃ : A) (t₂ t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 node34 {c = red}   a₂₃ (nr a₁₂ t₁ t₂) a₃₄ t₃ t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 node34 {c = black} a₁₂ t₁             a₂₃ t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+node-small-big : (a : A) (l : Tree' black n) (r : Tree' black (suc n)) →  ∃ λ c → Tree' c (suc n)
+node-small-big a₁₂ t₁ (nb {c = black} a₂₃ t₂           t₃) = black , node3 a₁₂ t₁ a₂₃ t₂ t₃
+node-small-big a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) = red , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+
+node-small-any-big : (a : A) (l : Tree' c n) (r : Tree' black (1 + n)) → ∃ (λ c → Tree' c (1 + n))
+node-small-any-big {c = black} a l r = node-small-big a l r
+node-small-any-big {c = red}   a l r = red , nr a (redToBlack l) r
 
 node-big-small : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 -- node-big-small a (nb a₁ l l₁) r = {!node3!} --internal error C-c C-a
@@ -210,51 +219,66 @@ node-any-black-black {c = black} a₂₃ a₁₂ t₁           t₂ t₃ = blac
 node-any-black-black {c = red} a₂₃ a₁₂ (nr a₀₁ t₀ t₁) t₂ t₃ = red   , nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₂₃ t₂ t₃)
 
 node-big-big-small : (a₂₃ : A) (a₁₂ : A) (t₁ t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' black (suc (suc n))
--- node-big-big-small a₂₃ a₁₂ t₁ t₂ t₃ = {!node-black-any a₁₂ t₁ (proj₂ (node-big-small a₂₃ t₂ t₃))!}
 node-big-big-small a₄₅ a₁₂ t₁ (nb a₃₄ t₃ t₄) t₅ = node-black-any' a₁₂ t₁ (proj₂ (node-any-black-black a₄₅ a₃₄ t₃ t₄ t₅))
--- node-big-big-small a₄₅ a₁₂ t₁ (nb {c = black} a₃₄ t₃ t₄) t₅ = {!!}
--- node-big-big-small a₄₅ a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) t₅ =  nb a₂₃ {!nr a₁₂ t₁ t₂!} {!!}
--- node-big-big-small a₃₄ a₁₂ (nb a₀₁ t₀ t₁) (nb a₂₃ t₂ t₃) t₄ = {!!}
 
--- node-big-big-small : (a₂₃ : A) (a₁₂ : A) (t₁ t₂ : Tree' black (suc n)) (t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
--- -- node-big-big-small a₂₃ a₁₂ t₁ t₂ t₃ = {!node-black-any a₁₂ t₁ (proj₂ (node-big-small a₂₃ t₂ t₃))!}
--- node-big-big-small a₄₅ a₁₂ t₁ (nb a₃₄ t₃ t₄) t₅ = {!node-black-any a₁₂ t₁ (proj₂ ?)!}
--- node-big-big-small a₄₅ a₁₂ t₁ (nb {c = black} a₃₄ t₃ t₄) t₅ = {!!}
--- node-big-big-small a₄₅ a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) t₅ = black , nb a₂₃ {!nr a₁₂ t₁ t₂!} {!!}
--- -- node-big-big-small a₃₄ a₁₂ (nb a₀₁ t₀ t₁) (nb a₂₃ t₂ t₃) t₄ = {!!}
+nodeBlackShrinkR : (a : A) (l : Tree' black n) (r : Shrink n) → ∃ λ c → Tree' c n
+nodeBlackShrinkR a l (stay r)   = red , nr a l r
+nodeBlackShrinkR a l (shrink r) = node-big-small a l r
 
-nodeBlackShrink : (a : A) (l : Tree' black n) (r : Shrink n) → ∃ λ c → Tree' c n
-nodeBlackShrink a l (stay r)   = red , nr a l r
-nodeBlackShrink a l (shrink r) = node-big-small a l r
--- nodeBlackShrink a₃₄ (nb a₂₃ (nr a₁₂ t₁ t₂) t₃)  (shrink t₄) = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
--- nodeBlackShrink a₃₄ (nb {c = black} a₂₃ t₁₂ t₃) (shrink t₄) = black , nb a₃₄ (nr a₂₃ t₁₂ t₃) t₄
+nodeBlackShrinkL : (a : A) (l : Shrink' black n) (r : Tree' black n) → ∃ λ c → Tree' c n
+nodeBlackShrinkL a (stay l)   r = red , nr a l r
+nodeBlackShrinkL a (shrink l) r = node-small-big a l r
+
+-- nodeBlackShrinkL : (a : A) (l : Shrink' c n) (r : Tree' black n) → ∃ λ c → Tree' c n
+-- nodeBlackShrinkL a (stay l)   r = {!black , nb a l r!}
+-- nodeBlackShrinkL a (shrink l) r = node-small-any-big a l r
 
 nodeShrink : (a : A) (l : Tree' c n) (r : Shrink n) →  Shrink (suc n)
 nodeShrink a l (stay r)   = stay (nb a l r)
 nodeShrink a (nr a₁ l l₁) (shrink r) = stay (node-big-big-small a a₁ l l₁ r)
--- nodeShrink a (nr a₁ l l₁) (shrink r) = toShrink (toGrow (node-big-big-small a a₁ l l₁ r))
 nodeShrink a (nb a₁ l l₁) (shrink r) = toShrink (toGrow (node34 a₁ l a l₁ r))
+
+-- NOT TRUE
+-- toAny : ∃ (λ c → Shrink' c n) → ∃ λ c → Tree' c n
+-- toAny (c , stay t) = c , t
+-- toAny (red , shrink t) = {!!}
+-- toAny (black , shrink t) = {!!}
 
 mutual
   deleteR : (a : A) → Tree' red n → ∃ λ c → Tree' c n
   deleteR a (nr b l r) with compare a b
   deleteR a (nr b l r) | tri≈ _ a=b _ = joinB l r
-  deleteR a (nr b l r) | tri< a<b _ _ = {!!}
-  deleteR a (nr b l r) | tri> _ _ b<a = nodeBlackShrink b l (deleteB a r)
+  deleteR a (nr b l r) | tri< a<b _ _ = nodeBlackShrinkL b (deleteB a l) r
+  deleteR a (nr b l r) | tri> _ _ b<a = nodeBlackShrinkR b l (deleteB a r)
 
   deleteB : (a : A) → Tree' black n → Shrink n
   deleteB a lf = stay lf
   deleteB a (nb b l r)  with compare a b
   deleteB a (nb b l r) | tri≈ _ a=b _ = toShrink (join l r)
-  deleteB a (nb b l r) | tri< a<b _ _ = {!deleteR a l!}
-
+  deleteB a (nb b l r) | tri< a<b _ _ with delete a l
+  ... | _     , stay   l = stay (nb b l r)
+  ... | red   , shrink l = stay (nb b (redToBlack l) r)
+  ... | black , shrink l = toShrink (toGrow (node-small-big b l r))
   deleteB a (nb b l r) | tri> _ _ b<a = nodeShrink b l (deleteB a r)
-  deleteB a (nb b l r) | tri> _ _ b<a with deleteB a r
-  -- ... | r' = {!nodeShrink b l r'!}  -- C-c C-h changes argument order
-  ... | r' = {!nodeShrink b l r'!}
-  deleteB _ (nb b l _) | tri> _ _ b<a | stay r = stay (nb b l r)
-  deleteB _ (nb b (nr a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
-  deleteB _ (nb b (nb a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
+
+  delete : (a : A) → Tree' c n → ∃ λ c → Shrink' c n
+  delete {c = black} a t = black , deleteB a t
+  delete {c = red} a t with deleteR a t
+  ... | c , t = c , stay t
+
+  -- deleteB a (nb b l r) | tri
+  -- delete : (a : A) → Tree' c n → Shrink n
+  -- delete {c = red} a t with deleteR a t
+  -- ... | red   , t' = {!!}
+  -- ... | black , t' = {!!}
+  -- delete {c = black} a t = deleteB a t
+
+  -- -- deleteB a (nb b l r) | tri> _ _ b<a with deleteB a r
+  -- -- ... | r' = {!nodeShrink b l r'!}  -- C-c C-h changes argument order
+  -- ... | r' = {!nodeShrink b l r'!}
+  -- deleteB _ (nb b l _) | tri> _ _ b<a | stay r = stay (nb b l r)
+  -- deleteB _ (nb b (nr a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
+  -- deleteB _ (nb b (nb a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
 
 
 
