@@ -147,6 +147,11 @@ mutual
   ... | tri> _ _ b<a = let c , r' = insertB a r in prenode (left-black c)  b l r'
 
 
+------------------------------------------------------------------------
+-- Joining two trees.
+
+-- Constructions and rotations.
+
 black-any : (a : A) (l : Tree' black n) (r : Tree' c n) → Tree' black (suc n)
 black-any {c = black} a l r            = nb a l r
 black-any {c = red}   a l (nr b rl rr) = rotˡ a l b rl rr
@@ -156,37 +161,30 @@ small-big-small {c = black} a₁₂ a₃₄ t₁           (nb             a₂�
 small-big-small {c = red} a₁₂ a₃₄ (nr a₀₁ t₀ t₁) (nb {c = black} a₂₃ t₂           t₃) t₄ = nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₃₄ (nr a₂₃ t₂ t₃) t₄)
 small-big-small {c = red} a₁₂ a₄₅ (nr a₀₁ t₀ t₁) (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) t₅ = nr a₂₃ (nb a₁₂ (nr a₀₁ t₀ t₁) t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
 
--- {!nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₃₄ (nr a₂₃ t₂ t₃) t₄)!}
-
 any-any-black : (a₁₂ a₂₃ : A) (t₁ : Tree' c₁ n) (t₂ : Tree' c₂ n) (t₃ : Tree' black n) → ∃ λ c → Tree' c (suc n)
 any-any-black {c₁ = red}                a₁₂ a₂₃ t₁ t₂             t₃ = red   , nr a₂₃ (redToBlack t₁) (nb a₂₃ t₂ t₃)
 any-any-black {c₁ = black} {c₂ = black} a₁₂ a₂₃ t₁ t₂             t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 any-any-black {c₁ = black} {c₂ = red}   a₁₂ a₃₄ t₁ (nr a₂₃ t₂ t₃) t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
-------------------------------------------------------------------------
--- Joining two trees.
+-- Join, by cases on color
 
 mutual
 
-  joinB : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
-  joinB lf lf = _ , lf
-  joinB (nb {c = c    } a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) = any-any-black a₁₂ a₃₄ t₁ (proj₂ (joinB t₂ t₃)) t₄
-  joinB (nb {c = c    } a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) with joinB t₂ t₃
-  -- joinB 3-node 2-node
-  joinB (nb {c = red  } a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , t₂₃        = _ , nr a₁₂ (redToBlack t₁) (nb a₃₄ t₂₃ t₄)
-  -- joinB 2-node 2-node
-  joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | black , t₂₃    = _ , nb a₃₄ (nr a₁₂ t₁ t₂₃) t₄
-  joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , nr a t₂ t₃ = _ , nr a (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
-  -- joinB _ 3-node
-  joinB (nb {c = c    } a₁₂ t₁ t₂) (nb {c = red  } a₃₄ t₃ t₄) = red , small-big-small a₁₂ a₃₄ t₁ (joinBR t₂ t₃) t₄
+  joinBB : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
+  joinBB lf lf = _ , lf
+  joinBB (nb a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) = any-any-black a₁₂ a₃₄ t₁ (proj₂ (joinBB t₂ t₃)) t₄
+  joinBB (nb a₁₂ t₁ t₂) (nb {c = red  } a₃₄ t₃ t₄) = _ , small-big-small a₁₂ a₃₄ t₁ (joinBR t₂ t₃) t₄
 
   joinBR : Tree' black n → Tree' red n → Tree' black (suc n)
-  joinBR t₁ (nr a t₂ r) = nb a (proj₂ (joinB t₁ t₂)) r
+  joinBR t₁ (nr a t₂ r) = nb a (proj₂ (joinBB t₁ t₂)) r
 
-joinR : Tree' red n → Tree' black n → Tree' black (suc n)
-joinR (nr a₁₂ t₁ t₂) t₃ with joinB t₂ t₃
-joinR (nr a₁₂ t₁ _) _ | black , t₂₃        = nb a₁₂ t₁ t₂₃
-joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+joinRB : Tree' red n → Tree' black n → Tree' black (suc n)
+joinRB (nr a₁₂ t₁ t₂) t₃ = black-any a₁₂ t₁ (proj₂ (joinBB t₂ t₃))
+joinRB (nr a₁₂ t₁ t₂) t₃ with joinBB t₂ t₃
+joinRB (nr a₁₂ t₁ _) _ | black , t₂₃        = nb a₁₂ t₁ t₂₃
+joinRB (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+-- Result type of generic join
 
 data Grow : ℕ → Set where
   stay : (t : Tree' black n) → Grow n
@@ -196,9 +194,11 @@ toGrow : (∃ λ c → Tree' c n) → Grow n
 toGrow (black , t) = stay t
 toGrow (red   , t) = grow (redToBlack t)
 
+-- join c black
+
 join : Tree' c n → Tree' black n → Grow n
-join {c = red}   t₁ t₂ = grow   (joinR t₁ t₂)
-join {c = black} t₁ t₂ = toGrow (joinB t₁ t₂)
+join {c = red}   t₁ t₂ = grow   (joinRB t₁ t₂)
+join {c = black} t₁ t₂ = toGrow (joinBB t₁ t₂)
 
 ------------------------------------------------------------------------
 -- Deleting from a tree
@@ -278,7 +278,7 @@ mutual
 
   deleteR : (a : A) → Tree' red n → ∃ λ c → Tree' c n
   deleteR a (nr b l r) with compare a b
-  deleteR a (nr b l r) | tri≈ _ a=b _ = joinB l r
+  deleteR a (nr b l r) | tri≈ _ a=b _ = joinBB l r
   deleteR a (nr b l r) | tri< a<b _ _ = nodeBlackShrinkL b (deleteB a l) r
   deleteR a (nr b l r) | tri> _ _ b<a = nodeBlackShrinkR b l (deleteB a r)
 
