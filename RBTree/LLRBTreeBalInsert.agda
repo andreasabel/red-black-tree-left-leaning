@@ -183,9 +183,15 @@ data Shrink' (c : Color) : ℕ → Set where
 
 Shrink = Shrink' black
 
-toShrink : Grow n → Shrink (1 + n)
-toShrink (stay t) = shrink t
-toShrink (grow t) = stay t
+growToShrink : Grow n → Shrink (1 + n)
+growToShrink (stay t) = shrink t
+growToShrink (grow t) = stay t
+
+-- toShrink = growToShrink ∘ toGrow
+-- Loses information by applying redToBlack
+toShrink : (∃ λ c → Tree' c n) → Shrink (suc n)
+toShrink (black , t) = shrink t
+toShrink (red   , t) = stay (redToBlack t)
 
 node3 : (a₁₂ : A) (t₁ : Tree' black n) (a₂₃ : A) (t₂ t₃ : Tree' black n) → Tree' black (suc n)
 node3 a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
@@ -229,22 +235,22 @@ nodeBlackShrinkL : (a : A) (l : Shrink' black n) (r : Tree' black n) → ∃ λ 
 nodeBlackShrinkL a (stay l)   r = red , nr a l r
 nodeBlackShrinkL a (shrink l) r = node-small-big a l r
 
--- nodeBlackShrinkL : (a : A) (l : Shrink' c n) (r : Tree' black n) → ∃ λ c → Tree' c n
--- nodeBlackShrinkL a (stay l)   r = {!black , nb a l r!}
--- nodeBlackShrinkL a (shrink l) r = node-small-any-big a l r
+nodeShrinkL : (a : A) (l : Shrink' c n) (r : Tree' black n) → Shrink (suc n)
+nodeShrinkL             a (stay l)   r = stay (nb a l r)
+nodeShrinkL {c = red}   a (shrink l) r = stay (nb a (redToBlack l) r)
+nodeShrinkL {c = black} a (shrink l) r = toShrink (node-small-big a l r)
 
-nodeShrink : (a : A) (l : Tree' c n) (r : Shrink n) →  Shrink (suc n)
-nodeShrink a l (stay r)   = stay (nb a l r)
-nodeShrink a (nr a₁ l l₁) (shrink r) = stay (node-big-big-small a a₁ l l₁ r)
-nodeShrink a (nb a₁ l l₁) (shrink r) = toShrink (toGrow (node34 a₁ l a l₁ r))
-
--- NOT TRUE
--- toAny : ∃ (λ c → Shrink' c n) → ∃ λ c → Tree' c n
--- toAny (c , stay t) = c , t
--- toAny (red , shrink t) = {!!}
--- toAny (black , shrink t) = {!!}
+nodeShrinkR : (a : A) (l : Tree' c n) (r : Shrink n) → Shrink (suc n)
+nodeShrinkR a l            (stay r)   = stay (nb a l r)
+nodeShrinkR a (nr a₁ l l₁) (shrink r) = stay (node-big-big-small a a₁ l l₁ r)
+nodeShrinkR a (nb a₁ l l₁) (shrink r) = toShrink (node34 a₁ l a l₁ r)
 
 mutual
+
+  delete' : (a : A) → Tree' c n → ∃ λ c → Shrink' c n
+  delete' {c = black} a t = black , deleteB a t
+  delete' {c = red}   a t = _ , stay (proj₂ (deleteR a t))
+
   deleteR : (a : A) → Tree' red n → ∃ λ c → Tree' c n
   deleteR a (nr b l r) with compare a b
   deleteR a (nr b l r) | tri≈ _ a=b _ = joinB l r
@@ -254,35 +260,24 @@ mutual
   deleteB : (a : A) → Tree' black n → Shrink n
   deleteB a lf = stay lf
   deleteB a (nb b l r)  with compare a b
-  deleteB a (nb b l r) | tri≈ _ a=b _ = toShrink (join l r)
-  deleteB a (nb b l r) | tri< a<b _ _ with delete a l
-  ... | _     , stay   l = stay (nb b l r)
-  ... | red   , shrink l = stay (nb b (redToBlack l) r)
-  ... | black , shrink l = toShrink (toGrow (node-small-big b l r))
-  deleteB a (nb b l r) | tri> _ _ b<a = nodeShrink b l (deleteB a r)
+  deleteB a (nb b l r) | tri≈ _ a=b _ = growToShrink (join l r)
+  deleteB a (nb b l r) | tri< a<b _ _ = nodeShrinkL b (proj₂ (delete' a l)) r
+  deleteB a (nb b l r) | tri> _ _ b<a = nodeShrinkR b l (deleteB a r)
 
-  delete : (a : A) → Tree' c n → ∃ λ c → Shrink' c n
-  delete {c = black} a t = black , deleteB a t
-  delete {c = red} a t with deleteR a t
-  ... | c , t = c , stay t
+  -- deleteB a (nb b l r) | tri> _ _ b<a with deleteB a r
+  -- ... | r' = {!nodeShrink b l r'!}  -- C-c C-h changes argument order
 
-  -- deleteB a (nb b l r) | tri
-  -- delete : (a : A) → Tree' c n → Shrink n
-  -- delete {c = red} a t with deleteR a t
-  -- ... | red   , t' = {!!}
-  -- ... | black , t' = {!!}
-  -- delete {c = black} a t = deleteB a t
+------------------------------------------------------------------------
+-- Make the root black
 
-  -- -- deleteB a (nb b l r) | tri> _ _ b<a with deleteB a r
-  -- -- ... | r' = {!nodeShrink b l r'!}  -- C-c C-h changes argument order
-  -- ... | r' = {!nodeShrink b l r'!}
-  -- deleteB _ (nb b l _) | tri> _ _ b<a | stay r = stay (nb b l r)
-  -- deleteB _ (nb b (nr a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
-  -- deleteB _ (nb b (nb a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
+ifRed : ∀ {A : Set} → Color → A → A → A
+ifRed red   a b = a
+ifRed black a b = b
 
+makeBlack : ∀ {c n} → Tree' c n → Tree' black (ifRed c (suc n) n)
+makeBlack {black} t = t
+makeBlack {.red} (nr b t1 t2) = nb b t1 t2
 
-
-{-
 ------------------------------------------------------------------------
 -- Non-indexed interface
 
@@ -292,13 +287,19 @@ data Tree : Set where
 singleton : A → Tree
 singleton x = tree (nb x lf lf)
 
--- Insertion (makes the root black)
+-- Insertion (makes the root black again)
 
 insert : A → Tree → Tree
-insert x (tree t) with insertB x t
-... | red   , nr a l r = tree (nb a l r)
-... | black , nb a l r = tree (nb a l r)
-... | black , lf       = tree lf
+insert x (tree t) = tree (makeBlack (proj₂ (insertB x t)))
+
+-- Deletion (makes the root black again)
+
+fromShrink : Shrink' c n → Tree
+fromShrink (stay   t) = tree (makeBlack t)
+fromShrink (shrink t) = tree (makeBlack t)
+
+delete : A → Tree → Tree
+delete x (tree t) = fromShrink (proj₂ (delete' x t))
 
 -- Conversion from and to list
 
@@ -326,14 +327,6 @@ colorOf : ∀ {c n} → (t : Tree' c n) → ColorOf c t
 colorOf (nr a l r) = red   (nr a l r)
 colorOf lf         = black lf
 colorOf (nb a l r) = black (nb a l r)
-
-ifRed : ∀ {A : Set} → Color → A → A → A
-ifRed red   a b = a
-ifRed black a b = b
-
-makeBlack : ∀ {c n} → Tree' c n → Tree' black (ifRed c (suc n) n)
-makeBlack {black} t = t
-makeBlack {.red} (nr b t1 t2) = nb b t1 t2
 
 colorFlip : (b : A)
           → Tree' red n
