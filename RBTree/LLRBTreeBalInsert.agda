@@ -55,6 +55,20 @@ data Tree' : Color → ℕ → Set where
 redToBlack : Tree' red n → Tree' black (suc n)
 redToBlack (nr a l r) = nb a l r
 
+-- Derived tree constructors
+
+-- Rotations
+
+-- Combining three black nodes into one
+--
+--     a₁₂                      a₂₃
+--          a₂₃     ⇒      a₁₂
+--   t₁   t₂   t₃        t₁   t₂   t₃
+--
+rotˡ : (a₁₂ : A) (t₁ : Tree' black n) (a₂₃ : A) (t₂ t₃ : Tree' black n) → Tree' black (suc n)
+rotˡ a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+
 -- Result of inserting into a red node.
 -- A decomposed red node with children of any color (except red-red).
 -- Does not satisfy the red-black invariant (unless both are black).
@@ -109,16 +123,16 @@ mutual
   -- We get back a pre-node which we need might need integrate with the parent through rotation.
 
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
-  ... | prenode black-black c ll lr              = _ , nb b (nr c ll lr) r
-  ... | prenode red-black   c (nr d  lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
-  ... | prenode black-red   c ll (nr d lrl lrr)  = _ , nr d (nb c ll lrl) (nb b lrr r)
+  ... | prenode black-black c ll lr             = _ , nb b (nr c ll lr) r
+  ... | prenode red-black   c (nr d lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
+  ... | prenode black-red   c ll (nr d lrl lrr) = _ , nr d (nb c ll lrl) (nb b lrr r)
 
   -- Insert right (into black node).
   -- If the result is a red node, we need to rotate or recolor as right children cannot be red.
 
   insertB a (nb             b l r) | tri> _ _ b<a with insertB a r
   insertB a (nb             b l r) | tri> _ _ b<a | black , r'         = _ , nb b l r'
-  insertB a (nb {c = black} b l r) | tri> _ _ b<a | red   , nr c rl rr = _ , nb c (nr b l rl) rr
+  insertB a (nb {c = black} b l r) | tri> _ _ b<a | red   , nr c rl rr = _ , rotˡ b l c rl rr
   insertB a (nb {c = red  } b l r) | tri> _ _ b<a | red   , r'         = _ , nr b (redToBlack l) (redToBlack r')
 
 
@@ -193,15 +207,12 @@ toShrink : (∃ λ c → Tree' c n) → Shrink (suc n)
 toShrink (black , t) = shrink t
 toShrink (red   , t) = stay (redToBlack t)
 
-node3 : (a₁₂ : A) (t₁ : Tree' black n) (a₂₃ : A) (t₂ t₃ : Tree' black n) → Tree' black (suc n)
-node3 a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
-
 node34 : (a₁₂ : A) (t₁ : Tree' c n) (a₂₃ : A) (t₂ t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 node34 {c = red}   a₂₃ (nr a₁₂ t₁ t₂) a₃₄ t₃ t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 node34 {c = black} a₁₂ t₁             a₂₃ t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
 node-small-big : (a : A) (l : Tree' black n) (r : Tree' black (suc n)) →  ∃ λ c → Tree' c (suc n)
-node-small-big a₁₂ t₁ (nb {c = black} a₂₃ t₂           t₃) = black , node3 a₁₂ t₁ a₂₃ t₂ t₃
+node-small-big a₁₂ t₁ (nb {c = black} a₂₃ t₂           t₃) = black , rotˡ a₁₂ t₁ a₂₃ t₂ t₃
 node-small-big a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) = red , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
 node-small-any-big : (a : A) (l : Tree' c n) (r : Tree' black (1 + n)) → ∃ (λ c → Tree' c (1 + n))
@@ -209,7 +220,7 @@ node-small-any-big {c = black} a l r = node-small-big a l r
 node-small-any-big {c = red}   a l r = red , nr a (redToBlack l) r
 
 node-big-small : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) →  ∃ λ c → Tree' c (suc n)
--- node-big-small a (nb a₁ l l₁) r = {!node3!} --internal error C-c C-a
+-- node-big-small a (nb a₁ l l₁) r = {!rotˡ!} --internal error C-c C-a
 node-big-small a₂₃ (nb a₁₂ t₁ t₂) t₃ = node34 a₁₂ t₁ a₂₃ t₂ t₃
 
 node-black-any : (a : A) (l : Tree' black n) (r : Tree' c n) → ∃ λ c → Tree' c (suc n)
@@ -218,7 +229,7 @@ node-black-any {c = red} a l (nr a₁ r r₁) = node34 a l a₁ r r₁
 
 node-black-any' : (a : A) (l : Tree' black n) (r : Tree' c n) → Tree' black (suc n)
 node-black-any' {c = black} a l r = nb a l r
-node-black-any' {c = red} a l (nr a₁ r r₁) = node3 a l a₁ r r₁
+node-black-any' {c = red} a l (nr a₁ r r₁) = rotˡ a l a₁ r r₁
 
 node-any-black-black : (a₂₃ : A) (a₁₂ : A) (t₁ : Tree' c n) (t₂ : Tree' black n) (t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
 node-any-black-black {c = black} a₂₃ a₁₂ t₁           t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
