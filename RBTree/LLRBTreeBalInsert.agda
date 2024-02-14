@@ -31,8 +31,8 @@ open import Data.List.Base using (List; []; _∷_; [_]; _++_; foldr)
 ------------------------------------------------------------------------
 
 data Color : Set where
-  red   : Color
   black : Color
+  red   : Color
 
 variable
   n : ℕ
@@ -124,7 +124,7 @@ mutual
 
   insertB a (nb {c = red}   b l r) | tri< a<b _ _ with insertR a l
   ... | prenode black-black c ll lr             = _ , nb b (nr c ll lr) r
-  ... | prenode red-black   c (nr d lll llr) lr = _ , nr c (nb d lll llr) (nb b lr r)
+  ... | prenode red-black   c ll lr             = _ , nr c (redToBlack ll) (nb b lr r)
   ... | prenode black-red   c ll (nr d lrl lrr) = _ , nr d (nb c ll lrl) (nb b lrr r)
 
   -- Insert right (into black node).
@@ -134,7 +134,6 @@ mutual
   insertB a (nb             b l r) | tri> _ _ b<a | black , r'         = _ , nb b l r'
   insertB a (nb {c = black} b l r) | tri> _ _ b<a | red   , nr c rl rr = _ , rotˡ b l c rl rr
   insertB a (nb {c = red  } b l r) | tri> _ _ b<a | red   , r'         = _ , nr b (redToBlack l) (redToBlack r')
-
 
   ------------------------------------------------------------------------
   -- Inserting into red tree.
@@ -147,8 +146,25 @@ mutual
   ... | tri< a<b _ _ = let c , l' = insertB a l in prenode (right-black c) b l' r
   ... | tri> _ _ b<a = let c , r' = insertB a r in prenode (left-black c)  b l r'
 
+
+black-any : (a : A) (l : Tree' black n) (r : Tree' c n) → Tree' black (suc n)
+black-any {c = black} a l r            = nb a l r
+black-any {c = red}   a l (nr b rl rr) = rotˡ a l b rl rr
+
+small-big-small : (a₁₂ a₂₃ : A) (t₁ : Tree' black n) (t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' red (suc n)
+small-big-small a₁₂ a₃₄ t₁ (nb a₂₃ t₂ t₃) t₄ =  nr a₂₃ (black-any a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+
+small-any-big-small : (a₁₂ a₂₃ : A) (t₁ : Tree' c n) (t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' red (suc n)
+small-any-big-small {c = black} a₁₂ a₃₄ t₁           (nb             a₂₃ t₂           t₃) t₄ = nr a₂₃ (black-any a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+small-any-big-small {c = red} a₁₂ a₃₄ (nr a₀₁ t₀ t₁) (nb {c = black} a₂₃ t₂           t₃) t₄ = nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₃₄ (nr a₂₃ t₂ t₃) t₄)
+small-any-big-small {c = red} a₁₂ a₄₅ (nr a₀₁ t₀ t₁) (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) t₅ = nr a₂₃ (nb a₁₂ (nr a₀₁ t₀ t₁) t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
+
+-- {!nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₃₄ (nr a₂₃ t₂ t₃) t₄)!}
+
 ------------------------------------------------------------------------
 -- Joining two trees.
+
+joinBR : Tree' black n → Tree' red n → Tree' black (suc n)
 
 joinB : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
 joinB lf lf = _ , lf
@@ -159,6 +175,7 @@ joinB (nb {c = red  } a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , t�
 joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | black , t₂₃    = _ , nb a₃₄ (nr a₁₂ t₁ t₂₃) t₄
 joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , nr a t₂ t₃ = _ , nr a (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 -- joinB _ 3-node
+joinB (nb {c = c    } a₁₂ t₁ t₂) (nb {c = red  } a₃₄ t₃ t₄) = red , small-any-big-small a₁₂ a₃₄ t₁ (joinBR t₂ t₃) t₄
 joinB (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅) with joinB t₂ t₃
 joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | red , nr a₂₃ t₂ t₃ = _ , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
 joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | black , t₂₃        = _ , nr a₃₄ (nb a₁₂ t₁ t₂₃) (nb a₄₅ t₄ t₅)
@@ -168,11 +185,8 @@ joinR (nr a₁₂ t₁ t₂) t₃ with joinB t₂ t₃
 joinR (nr a₁₂ t₁ _) _ | black , t₂₃        = nb a₁₂ t₁ t₂₃
 joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
--- joinR : Tree' red n → Tree' black n → ∃ λ c → Tree' c n
--- joinR t lf = red , t
--- joinR (nr a₁₂ t₁ t₂) t₃ with join t₂ t₃
--- joinR (nr a₁₂ t₁ _) _ | black , t₂₃ = red , nr a₁₂ t₁ t₂₃
--- joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = {!!}
+joinBR t₁ (nr a t₂ r) = nb a (proj₂ (joinB t₁ t₂)) r
+
 
 data Grow : ℕ → Set where
   stay : (t : Tree' black n) → Grow n
