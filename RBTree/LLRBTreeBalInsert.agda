@@ -57,9 +57,13 @@ redToBlack (nr a l r) = nb a l r
 
 -- Derived tree constructors
 
--- Rotations
-
 -- Combining three black nodes into one
+
+3black : (a₁₂ a₂₃ : A) (t₁ t₂ t₃ : Tree' black n) → Tree' black (suc n)
+3black a₁₂ a₂₃ t₁ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+-- The same seen as a left rotation
+--
 --
 --     a₁₂                      a₂₃
 --          a₂₃     ⇒      a₁₂
@@ -68,6 +72,8 @@ redToBlack (nr a l r) = nb a l r
 rotˡ : (a₁₂ : A) (t₁ : Tree' black n) (a₂₃ : A) (t₂ t₃ : Tree' black n) → Tree' black (suc n)
 rotˡ a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
+4black : (a₁₂ a₂₃ a₃₄ : A) (t₁ t₂ t₃ t₄ : Tree' black n) → Tree' red (suc n)
+4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄ = nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
 -- Result of inserting into a red node.
 -- A decomposed red node with children of any color (except red-red).
@@ -148,23 +154,53 @@ mutual
 
 
 ------------------------------------------------------------------------
--- Joining two trees.
+-- Constructions and rotations for joining and deletion.
 
--- Constructions and rotations.
+-- Two small trees.
 
 black-any : (a : A) (l : Tree' black n) (r : Tree' c n) → Tree' black (suc n)
 black-any {c = black} a l r            = nb a l r
 black-any {c = red}   a l (nr b rl rr) = rotˡ a l b rl rr
+
+-- Three small trees.
+
+black-any-black : (a₁₂ a₂₃ : A) (t₁ : Tree' black n) (t₂ : Tree' c n) (t₃ : Tree' black n) → Tree' c (suc n)
+black-any-black {c = black} a₁₂ a₂₃ t₁ t₂             t₃ = 3black a₁₂ a₂₃ t₁ t₂ t₃
+black-any-black             a₁₂ a₃₄ t₁ (nr a₂₃ t₂ t₃) t₄ = 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄
+
+any-black-black : (a₁₂ a₂₃ : A) (t₁ : Tree' c n) (t₂ t₃ : Tree' black n) → Tree' c (suc n)
+any-black-black {c = black} a₁₂ a₂₃ t₁             t₂ t₃ = 3black a₁₂ a₂₃ t₁ t₂ t₃
+any-black-black             a₂₃ a₃₄ (nr a₁₂ t₁ t₂) t₃ t₄ = 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄
+
+any-any-black : (a₁₂ a₂₃ : A) (t₁ : Tree' c₁ n) (t₂ : Tree' c₂ n) (t₃ : Tree' black n) → ∃ λ c → Tree' c (suc n)
+any-any-black {c₁ = red}    a₁₂ a₂₃ t₁ t₂ t₃ = red , nr a₂₃ (redToBlack t₁) (nb a₂₃ t₂ t₃)
+any-any-black {c₁ = black}  a₁₂ a₂₃ t₁ t₂ t₃ = _   , black-any-black a₁₂ a₂₃ t₁ t₂ t₃
+
+-- A small and a big tree (reducible to three small trees).
+
+black-Black : (a : A) (l : Tree' black n) (r : Tree' black (suc n)) → ∃ λ c → Tree' c (suc n)
+black-Black a₁₂ t₁ (nb a₂₃ t₂ t₃) = _ , black-any-black a₁₂ a₂₃ t₁ t₂ t₃
+
+Black-black : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) → ∃ λ c → Tree' c (suc n)
+Black-black a₂₃ (nb a₁₂ t₁ t₂) t₃ = _ , any-black-black a₁₂ a₂₃ t₁ t₂ t₃
+-- Black-black a (nb a₁ l l₁) r = {!rotˡ!} --internal error C-c C-a
+
+-- Three trees, some of them big.
+
+-- 4-6 small black trees make 1 big red tree.
 
 any-Black-black : (a₁₂ a₂₃ : A) (t₁ : Tree' c n) (t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' red (suc n)
 any-Black-black {c = black} a₁₂ a₃₄ t₁           (nb             a₂₃ t₂           t₃) t₄ = nr a₂₃ (black-any a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 any-Black-black {c = red} a₁₂ a₃₄ (nr a₀₁ t₀ t₁) (nb {c = black} a₂₃ t₂           t₃) t₄ = nr a₁₂ (nb a₀₁ t₀ t₁) (nb a₃₄ (nr a₂₃ t₂ t₃) t₄)
 any-Black-black {c = red} a₁₂ a₄₅ (nr a₀₁ t₀ t₁) (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) t₅ = nr a₂₃ (nb a₁₂ (nr a₀₁ t₀ t₁) t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
 
-any-any-black : (a₁₂ a₂₃ : A) (t₁ : Tree' c₁ n) (t₂ : Tree' c₂ n) (t₃ : Tree' black n) → ∃ λ c → Tree' c (suc n)
-any-any-black {c₁ = red}                a₁₂ a₂₃ t₁ t₂             t₃ = red   , nr a₂₃ (redToBlack t₁) (nb a₂₃ t₂ t₃)
-any-any-black {c₁ = black} {c₂ = black} a₁₂ a₂₃ t₁ t₂             t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
-any-any-black {c₁ = black} {c₂ = red}   a₁₂ a₃₄ t₁ (nr a₂₃ t₂ t₃) t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+-- 5-7 small black trees make 1 extra-big black tree.
+
+Black-Black-black : (a₁₂ : A) (a₂₃ : A) (t₁ t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' black (suc (suc n))
+Black-Black-black a₁₂ a₄₅ t₁ (nb a₃₄ t₃ t₄) t₅ = black-any a₁₂ t₁ (any-black-black a₃₄ a₄₅ t₃ t₄ t₅)
+
+------------------------------------------------------------------------
+-- Joining two trees.
 
 -- Join, by cases on color
 
@@ -217,23 +253,6 @@ growToShrink (grow t) = stay t
 toShrink : (∃ λ c → Tree' c n) → Shrink (suc n)
 toShrink (black , t) = shrink t
 toShrink (red   , t) = stay (redToBlack t)
-
--- Constructions and rotations.
-
-any-black-black : (a₁₂ : A) (a₂₃ : A) (t₁ : Tree' c n) (t₂ t₃ : Tree' black n) → Tree' c (suc n)
-any-black-black {c = black} a₁₂ a₂₃ t₁             t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
-any-black-black {c = red}   a₂₃ a₃₄ (nr a₁₂ t₁ t₂) t₃ t₄ = nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
-
-black-Black : (a : A) (l : Tree' black n) (r : Tree' black (suc n)) → ∃ λ c → Tree' c (suc n)
-black-Black a₁₂ t₁ (nb {c = black} a₂₃ t₂           t₃) = black , rotˡ a₁₂ t₁ a₂₃ t₂ t₃
-black-Black a₁₂ t₁ (nb {c = red} a₃₄ (nr a₂₃ t₂ t₃) t₄) = red , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
-
-Black-black : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) → ∃ λ c → Tree' c (suc n)
--- Black-black a (nb a₁ l l₁) r = {!rotˡ!} --internal error C-c C-a
-Black-black a₂₃ (nb a₁₂ t₁ t₂) t₃ = _ , any-black-black a₁₂ a₂₃ t₁ t₂ t₃
-
-Black-Black-black : (a₁₂ : A) (a₂₃ : A) (t₁ t₂ : Tree' black (suc n)) (t₃ : Tree' black n) → Tree' black (suc (suc n))
-Black-Black-black a₁₂ a₄₅ t₁ (nb a₃₄ t₃ t₄) t₅ = black-any a₁₂ t₁ (any-black-black a₃₄ a₄₅ t₃ t₄ t₅)
 
 -- Rebuilding trees from deletion results (Shrink).
 
