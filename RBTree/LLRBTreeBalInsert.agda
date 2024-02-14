@@ -136,21 +136,89 @@ mutual
 ------------------------------------------------------------------------
 -- Joining two trees.
 
-join : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
-join lf lf = _ , lf
-join (nb {c = c    } a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) with join t₂ t₃
--- join 3-node 2-node
-join (nb {c = red  } a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , t₂₃        = _ , nr a₁₂ (redToBlack t₁) (nb a₃₄ t₂₃ t₄)
--- join 2-node 2-node
-join (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | black , t₂₃    = _ , nb a₃₄ (nr a₁₂ t₁ t₂₃) t₄
-join (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , nr a t₂ t₃ = _ , nr a (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
--- join _ 3-node
-join (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅) with join t₂ t₃
-join (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | red , nr a₂₃ t₂ t₃ = _ , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
-join (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | black , t₂₃        = _ , nr a₃₄ (nb a₁₂ t₁ t₂₃) (nb a₄₅ t₄ t₅)
+joinB : Tree' black n → Tree' black n → ∃ λ c → Tree' c n
+joinB lf lf = _ , lf
+joinB (nb {c = c    } a₁₂ t₁ t₂) (nb {c = black} a₃₄ t₃ t₄) with joinB t₂ t₃
+-- joinB 3-node 2-node
+joinB (nb {c = red  } a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , t₂₃        = _ , nr a₁₂ (redToBlack t₁) (nb a₃₄ t₂₃ t₄)
+-- joinB 2-node 2-node
+joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | black , t₂₃    = _ , nb a₃₄ (nr a₁₂ t₁ t₂₃) t₄
+joinB (nb {c = black} a₁₂ t₁ _ ) (nb {c = black} a₃₄ _  t₄) | _ , nr a t₂ t₃ = _ , nr a (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+-- joinB _ 3-node
+joinB (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅) with joinB t₂ t₃
+joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | red , nr a₂₃ t₂ t₃ = _ , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₄₅ (nr a₃₄ t₃ t₄) t₅)
+joinB (nb a₁₂ t₁ _ ) (nb a₄₅ (nr a₃₄ _  t₄) t₅) | black , t₂₃        = _ , nr a₃₄ (nb a₁₂ t₁ t₂₃) (nb a₄₅ t₄ t₅)
+
+joinR : Tree' red n → Tree' black n → Tree' black (suc n)
+joinR t lf = redToBlack t
+joinR (nr a₁₂ t₁ t₂) t₃ with joinB t₂ t₃
+joinR (nr a₁₂ t₁ _) _ | black , t₂₃ = nb a₁₂ t₁ t₂₃
+joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+-- joinR : Tree' red n → Tree' black n → ∃ λ c → Tree' c n
+-- joinR t lf = red , t
+-- joinR (nr a₁₂ t₁ t₂) t₃ with join t₂ t₃
+-- joinR (nr a₁₂ t₁ _) _ | black , t₂₃ = red , nr a₁₂ t₁ t₂₃
+-- joinR (nr a₁₂ t₁ _) _ | red , nr a₂₃ t₂ t₃ = {!!}
+
+data Grow : ℕ → Set where
+  stay : (t : Tree' black n) → Grow n
+  grow : (t : Tree' black (1 + n)) → Grow n
+
+join : Tree' c n → Tree' black n → Grow n
+join {c = red}   t₁ t₂ = grow (joinR t₁ t₂)
+join {c = black} t₁ t₂ with joinB t₁ t₂
+... | black , t = stay t
+... | red   , t = grow (redToBlack t)
+
+------------------------------------------------------------------------
+-- Deleting from a tree
+
+-- Returning a possibly shrunk tree from an operation
+
+data Shrink : ℕ → Set where
+  stay   : (t : Tree' black n) → Shrink n
+  shrink : (t : Tree' black n) → Shrink (1 + n)
+
+toShrink : Grow n → Shrink (1 + n)
+toShrink (stay t) = shrink t
+toShrink (grow t) = stay t
+
+node3 : (a₁₂ : A) (t₁ : Tree' c n) (a₂₃ : A) (t₂ t₃ : Tree' black n) →  ∃ λ c → Tree' c (suc n)
+node3 {c = red}   a₂₃ (nr a₁₂ t₁ t₂) a₃₄ t₃ t₄ = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+node3 {c = black} a₁₂ t₁             a₂₃ t₂ t₃ = black , nb a₂₃ (nr a₁₂ t₁ t₂) t₃
+
+node-big-small : (a : A) (l : Tree' black (suc n)) (r : Tree' black n) →  ∃ λ c → Tree' c (suc n)
+-- node-big-small a (nb a₁ l l₁) r = {!node3!} --internal error C-c C-a
+node-big-small a₂₃ (nb a₁₂ t₁ t₂) t₃ = node3 a₁₂ t₁ a₂₃ t₂ t₃
+
+nodeBlackShrink : (a : A) (l : Tree' black n) (r : Shrink n) → ∃ λ c → Tree' c n
+nodeBlackShrink a l (stay r)   = red , nr a l r
+nodeBlackShrink a l (shrink r) = node-big-small a l r
+-- nodeBlackShrink a₃₄ (nb a₂₃ (nr a₁₂ t₁ t₂) t₃)  (shrink t₄) = red   , nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
+-- nodeBlackShrink a₃₄ (nb {c = black} a₂₃ t₁₂ t₃) (shrink t₄) = black , nb a₃₄ (nr a₂₃ t₁₂ t₃) t₄
+
+mutual
+  deleteR : (a : A) → Tree' red n → ∃ λ c → Tree' c n
+  deleteR a (nr b l r) with compare a b
+  deleteR a (nr b l r) | tri≈ _ a=b _ = joinB l r
+  deleteR a (nr b l r) | tri< a<b _ _ = {!!}
+  deleteR a (nr b l r) | tri> _ _ b<a = nodeBlackShrink b l (deleteB a r)
+
+  deleteB : (a : A) → Tree' black n → Shrink n
+  deleteB a lf = stay lf
+  deleteB a (nb b l r)  with compare a b
+  deleteB a (nb b l r) | tri≈ _ a=b _ = toShrink (join l r)
+  deleteB a (nb b l r) | tri< a<b _ _ = {!deleteR a l!}
+
+  deleteB a (nb b l r) | tri> _ _ b<a with deleteB a r
+  deleteB _ (nb b l _) | tri> _ _ b<a | stay r = stay (nb b l r)
+  deleteB _ (nb b (nr a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
+  deleteB _ (nb b (nb a ll lr) _) | tri> _ _ b<a | shrink r = {!!}
 
 
 
+{-
 ------------------------------------------------------------------------
 -- Non-indexed interface
 
