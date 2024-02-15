@@ -1,9 +1,7 @@
--- Left leaning red-black trees in Agda
+-- Left leaning red-black trees in Agda.
 --
--- Julien Oster and Andreas Abel, 2009/2010
---
--- Ordering and balancing is statically ensured.
--- Ensuring ordering is laborious, can be simplified by using the technique of
+-- * Balancing is ensured by typing.
+-- * Ordering is not ensured, could be added following
 --
 --   Conor McBride, Keeping your neighbours in order, ICFP 2010
 
@@ -29,6 +27,9 @@ open import Data.Nat.Base using (ℕ; zero; suc; _+_) -- hiding (_≤_; _<_; _�
 open import Data.List.Base using (List; []; _∷_; [_]; _++_; foldr)
 
 ------------------------------------------------------------------------
+-- Type of left-leaning red-black trees.
+
+-- Node coloring.
 
 data Color : Set where
   black : Color
@@ -38,26 +39,45 @@ variable
   n : ℕ
   c c₁ c₂ cₗ cᵣ : Color
 
+-- Trees indexed by color and black-height.
+--
+-- * Only black nodes increase the height.
+-- * Red nodes need to have black children.
+-- * Black nodes _can_ have a left red child, the right one _must_ be black.
+--
+-- The latter characterizes these trees as _left-leaning red-black trees_,
+-- which are a representation of 2-3 trees.
+--
+-- If the right child of a black node can also be red,
+-- we speak of (ordinary) red-black trees, which represent 2-3-4 trees.
+
 data Tree' : Color → ℕ → Set where
 
+  -- Leaves are black and contain no data.
   lf : Tree' black 0
 
+  -- Red node.
   nr : (a : A)
      → Tree' black n
      → Tree' black n
      → Tree' red n
 
+  -- Black node.
   nb : (a : A)
      → Tree' c n
      → Tree' black n
      → Tree' black (suc n)
 
+-- We can color a red node as black, increasing the black-height.
+
 redToBlack : Tree' red n → Tree' black (suc n)
 redToBlack (nr a l r) = nb a l r
 
+------------------------------------------------------------------------
 -- Derived tree constructors
 
--- Combining three black nodes into one
+-- Combining three black trees into a big one, making a "3-node".
+-- Deterministic.
 
 3black : (a₁₂ a₂₃ : A) (t₁ t₂ t₃ : Tree' black n) → Tree' black (suc n)
 3black a₁₂ a₂₃ t₁ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
@@ -72,10 +92,17 @@ redToBlack (nr a l r) = nb a l r
 rotˡ : (a₁₂ : A) (t₁ : Tree' black n) (a₂₃ : A) (t₂ t₃ : Tree' black n) → Tree' black (suc n)
 rotˡ a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
+
+-- Combining four black trees into a big red one.
+-- Deterministic.
+
 4black : (a₁₂ a₂₃ a₃₄ : A) (t₁ t₂ t₃ t₄ : Tree' black n) → Tree' red (suc n)
 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄ = nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
--- Result of inserting into a red node.
+------------------------------------------------------------------------
+-- Inserting a key into a tree.
+
+-- Result of inserting into a red node:
 -- A decomposed red node with children of any color (except red-red).
 -- Does not satisfy the red-black invariant (unless both are black).
 
@@ -92,6 +119,8 @@ data PreNode (n : ℕ) : Set where
     → Tree' cᵣ n
     → PreNode n
 
+-- Smart constructors for OneBlack.
+
 left-black : (c : Color) → OneBlack black c
 left-black black = black-black
 left-black red   = black-red
@@ -99,8 +128,6 @@ left-black red   = black-red
 right-black : (c : Color) → OneBlack c black
 right-black black = black-black
 right-black red   = red-black
-
--- Insertion
 
 mutual
 
