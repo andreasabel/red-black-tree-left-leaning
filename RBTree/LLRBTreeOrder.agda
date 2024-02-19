@@ -258,6 +258,25 @@ mutual
   ... | tri< a<b _ _ = let c , tₗ′ = insertB a l<a [ a<b ]ᴿ tₗ in prenode (right-black c) b tₗ′ tᵣ
   ... | tri> _ _ b<a = let c , tᵣ′ = insertB a [ b<a ]ᴿ a<r tᵣ in prenode (left-black c) b tₗ tᵣ′
 
+
+-- Insert a new minimal element.  No comparisons needed.
+
+mutual
+
+  insertMinB : ∀ a {l} (a<l : a < l) (t : Tree' [ l ] r black n) → ∃ λ c → Tree' [ a ] r c n
+  insertMinB a a<l (lf l<r)                 = black , lf (trans⁺ _ [ a<l ]ᴿ l<r )
+  insertMinB a a<l (nb {c = black} b t₁ t₂) = black , nb b (proj₂ (insertMinB a a<l t₁)) t₂
+  insertMinB a a<l (nb {c = red}   b t₁ t₂) = pre-black b (insertMinR a a<l t₁) t₂
+
+  insertMinR : ∀ a {l} (a<l : a < l) (t : Tree' [ l ] r red n) → PreNode [ a ] r n
+  insertMinR a a<l (nr b tₗ tᵣ) = let c , tₗ′ = insertMinB a a<l tₗ in prenode (right-black c) b tₗ′ tᵣ
+
+-- Insert a new maximal element.
+
+insertMax : ∀ a {r} (r<a : r < a) (t : Tree' l [ r ] black n) → ∃ λ c → Tree' l [ a ] c n
+insertMax a r<a (lf l<r) = black , lf (trans⁺ _ l<r [ r<a ]ᴿ)
+insertMax a r<a (nb b tₗ tᵣ) = any-any b tₗ (proj₂ (insertMax a r<a tᵣ))
+
 ------------------------------------------------------------------------
 -- Constructions and rotations for joining and deletion.
 
