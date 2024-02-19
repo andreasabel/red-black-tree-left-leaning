@@ -76,6 +76,8 @@ redToBlack (nr a tₗ tᵣ) = nb a tₗ tᵣ
 ------------------------------------------------------------------------
 -- Derived tree constructors
 
+-- Combining black trees.
+
 -- Combining three black trees into a big one, making a "3-node".
 -- Deterministic.
 
@@ -87,7 +89,7 @@ redToBlack (nr a tₗ tᵣ) = nb a tₗ tᵣ
   → Tree' l r black (suc n)
 3black a₁₂ a₂₃ t₁ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 
--- The same seen as a left rotation
+-- The same seen as a left rotation:
 --
 --
 --     a₁₂                      a₂₃
@@ -114,6 +116,59 @@ rotˡ a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
   → Tree' l r red (suc n)
 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄ = nr a₂₃ (nb a₁₂ t₁ t₂) (nb a₃₄ t₃ t₄)
 
+-- Combining two trees of same height but (potentially) different color.
+
+black-red :
+    (a₁₂ : A)
+  → (t₁ : Tree' l [ a₁₂ ] black n)
+  → (t₂ : Tree' [ a₁₂ ] r red   n)
+  → Tree' l r black (suc n)
+black-red a tₗ (nr b tₘ tᵣ) = rotˡ a tₗ b tₘ tᵣ
+
+red-red :
+    (a₁₂ : A)
+  → (t₁ : Tree' l [ a₁₂ ] red n)
+  → (t₂ : Tree' [ a₁₂ ] r red n)
+  → Tree' l r red (suc n)
+red-red a₁₂ t₁ t₂ = nr a₁₂ (redToBlack t₁) (redToBlack t₂)
+
+black-any :
+    (a₁₂ : A)
+  → (t₁ : Tree' l [ a₁₂ ] black n)
+  → (t₂ : Tree' [ a₁₂ ] r c     n)
+  → Tree' l r black (suc n)
+black-any {c = black} a tₗ tᵣ            = nb a tₗ tᵣ
+black-any {c = red}   a tₗ (nr b tₘ tᵣ) = rotˡ a tₗ b tₘ tᵣ
+
+any-any :
+    (a₁₂ : A)
+  → (t₁ : Tree' l [ a₁₂ ] c₁ n)
+  → (t₂ : Tree' [ a₁₂ ] r c₂ n)
+  → ∃ λ c → Tree' l r c (suc n)
+any-any {c₁ = c₁}    {c₂ = black} a₁₂ t₁ t₂ = _ , nb a₁₂ t₁ t₂
+any-any {c₁ = black} {c₂ = red}   a₁₂ t₁ t₂ = _ , black-red a₁₂ t₁ t₂
+any-any {c₁ = red}   {c₂ = red}   a₁₂ t₁ t₂ = _ , red-red a₁₂ t₁ t₂
+
+-- Three trees of the same size
+
+black-red-black :
+    (a₁₂ a₂₃ : A)
+  → (t₁ : Tree' l       [ a₁₂ ] black n)
+  → (t₂ : Tree' [ a₁₂ ] [ a₂₃ ] red   n)
+  → (t₃ : Tree' [ a₂₃ ] r       black n)
+  → Tree' l r red (suc n)
+black-red-black a₁₂ a₃₄ t₁ (nr a₂₃ t₂ t₃) t₄ = 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄
+
+black-any-black :
+    (a₁₂ a₂₃ : A)
+  → (t₁ : Tree' l       [ a₁₂ ] black n)
+  → (t₂ : Tree' [ a₁₂ ] [ a₂₃ ] c     n)
+  → (t₃ : Tree' [ a₂₃ ] r       black n)
+  → Tree' l r c (suc n)
+black-any-black {c = black} a₁₂ a₂₃ t₁ t₂ t₃ = 3black a₁₂ a₂₃ t₁ t₂ t₃
+black-any-black {c = red  } a₁₂ a₂₃ t₁ t₂ t₃ = black-red-black a₁₂ a₂₃ t₁ t₂ t₃
+
+
 ------------------------------------------------------------------------
 -- Inserting a key into a tree.
 
@@ -122,9 +177,9 @@ rotˡ a₁₂ t₁ a₂₃ t₂ t₃ = nb a₂₃ (nr a₁₂ t₁ t₂) t₃
 -- Does not satisfy the red-black invariant (unless both are black).
 
 data OneBlack : (cₗ cᵣ : Color) → Set where
-  black-black : OneBlack black black
-  red-black   : OneBlack red   black
-  black-red   : OneBlack black red
+  black∙black : OneBlack black black
+  red∙black   : OneBlack red   black
+  black∙red   : OneBlack black red
 
 data PreNode (l r : A⁺) (n : ℕ) : Set (ℓ ⊔ ℓ₂) where
   prenode
@@ -137,12 +192,23 @@ data PreNode (l r : A⁺) (n : ℕ) : Set (ℓ ⊔ ℓ₂) where
 -- Smart constructors for OneBlack.
 
 left-black : (c : Color) → OneBlack black c
-left-black black = black-black
-left-black red   = black-red
+left-black black = black∙black
+left-black red   = black∙red
 
 right-black : (c : Color) → OneBlack c black
-right-black black = black-black
-right-black red   = red-black
+right-black black = black∙black
+right-black red   = red∙black
+
+-- Combining a prenode with a black node.
+
+pre-black :
+    (a₁₂ : A)
+  → (t₁ : PreNode l [ a₁₂ ] n)
+  → (t₂ : Tree' [ a₁₂ ] r black n)
+  → ∃ λ c → Tree' l r c (suc n)
+pre-black a₂₃ (prenode black∙black a₁₂ t₁ t₂) t₃ = black , 3black a₁₂ a₂₃ t₁ t₂ t₃
+pre-black a₂₃ (prenode red∙black   a₁₂ t₁ t₂) t₃ = red   , nr a₁₂ (redToBlack t₁) (nb a₂₃ t₂ t₃)
+pre-black a₂₃ (prenode black∙red   a₁₂ t₁ t₂) t₃ = red   , black-red-black a₁₂ a₂₃ t₁ t₂ t₃
 
 mutual
 
@@ -167,23 +233,17 @@ mutual
   -- Insert left into black node.
   -- We can integrate the result as-is into the parent node.
 
-  insertB a l<a _ (nb {c = black} b tₗ tᵣ) | tri< a<b _ _ = let _ , tₗ′ = insertB a l<a [ a<b ]ᴿ tₗ in _ , nb b tₗ′ tᵣ
+  insertB a l<a _ (nb {c = black} b tₗ tᵣ) | tri< a<b _ _ = _ , nb b (proj₂ (insertB a l<a [ a<b ]ᴿ tₗ)) tᵣ
 
   -- Insert left into red node.
   -- We get back a pre-node which we need might need integrate with the parent through rotation.
 
-  insertB a l<a _ (nb {c = red}   b tₗ tᵣ) | tri< a<b _ _ with insertR a l<a [ a<b ]ᴿ tₗ
-  ... | prenode black-black c ll lr             = _ , nb b (nr c ll lr) tᵣ
-  ... | prenode red-black   c ll lr             = _ , nr c (redToBlack ll) (nb b lr tᵣ)
-  ... | prenode black-red   c ll (nr d lrl lrr) = _ , nr d (nb c ll lrl) (nb b lrr tᵣ)
+  insertB a l<a _ (nb {c = red}   b tₗ tᵣ) | tri< a<b _ _ = pre-black b (insertR a l<a [ a<b ]ᴿ tₗ) tᵣ
 
   -- Insert right (into black node).
   -- If the result is a red node, we need to rotate or recolor as right children cannot be red.
 
-  insertB a _ a<r (nb             b tₗ tᵣ) | tri> _ _ b<a with insertB a [ b<a ]ᴿ a<r tᵣ
-  insertB a _ a<r (nb             b tₗ tᵣ) | tri> _ _ b<a | black , tᵣ′         = _ , nb b tₗ tᵣ′
-  insertB a _ a<r (nb {c = black} b tₗ tᵣ) | tri> _ _ b<a | red   , nr c rl rr = _ , rotˡ b tₗ c rl rr
-  insertB a _ a<r (nb {c = red  } b tₗ tᵣ) | tri> _ _ b<a | red   , tᵣ′         = _ , nr b (redToBlack tₗ) (redToBlack tᵣ′)
+  insertB a _ a<r (nb             b tₗ tᵣ) | tri> _ _ b<a = any-any b tₗ (proj₂ (insertB a [ b<a ]ᴿ a<r tᵣ))
 
   ------------------------------------------------------------------------
   -- Inserting into red tree.
@@ -194,34 +254,14 @@ mutual
           → PreNode l r n
 
   insertR a l<a a<r (nr b tₗ tᵣ) with compare a b
-  ... | tri≈ _ a=b _   = prenode black-black b tₗ tᵣ
+  ... | tri≈ _ a=b _   = prenode black∙black b tₗ tᵣ
   ... | tri< a<b _ _ = let c , tₗ′ = insertB a l<a [ a<b ]ᴿ tₗ in prenode (right-black c) b tₗ′ tᵣ
   ... | tri> _ _ b<a = let c , tᵣ′ = insertB a [ b<a ]ᴿ a<r tᵣ in prenode (left-black c) b tₗ tᵣ′
-
 
 ------------------------------------------------------------------------
 -- Constructions and rotations for joining and deletion.
 
--- Two small trees.
-
-black-any :
-    (a₁₂ : A)
-  → (t₁ : Tree' l [ a₁₂ ] black n)
-  → (t₂ : Tree' [ a₁₂ ] r c     n)
-  → Tree' l r black (suc n)
-black-any {c = black} a tₗ tᵣ            = nb a tₗ tᵣ
-black-any {c = red}   a tₗ (nr b tₘ tᵣ) = rotˡ a tₗ b tₘ tᵣ
-
 -- Three small trees.
-
-black-any-black :
-    (a₁₂ a₂₃ : A)
-  → (t₁ : Tree' l       [ a₁₂ ] black n)
-  → (t₂ : Tree' [ a₁₂ ] [ a₂₃ ] c     n)
-  → (t₃ : Tree' [ a₂₃ ] r       black n)
-  → Tree' l r c (suc n)
-black-any-black {c = black} a₁₂ a₂₃ t₁ t₂             t₃ = 3black a₁₂ a₂₃ t₁ t₂ t₃
-black-any-black             a₁₂ a₃₄ t₁ (nr a₂₃ t₂ t₃) t₄ = 4black a₁₂ a₂₃ a₃₄ t₁ t₂ t₃ t₄
 
 any-black-black :
     (a₁₂ a₂₃ : A)
